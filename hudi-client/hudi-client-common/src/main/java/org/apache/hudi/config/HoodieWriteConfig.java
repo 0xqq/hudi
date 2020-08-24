@@ -51,7 +51,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Class storing configs for the {@link HoodieWriteClient}.
+ * Class storing configs for the HoodieWriteClient.
  */
 @Immutable
 public class HoodieWriteConfig extends DefaultHoodieConfig {
