@@ -44,8 +44,8 @@ import java.time.Instant;
  *
  * @param <T>
  */
-public class SparkDeleteHelper<T extends HoodieRecordPayload> extends BaseDeleteHelper<T, JavaRDD<HoodieRecord<T>>,
-    JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> {
+public class SparkDeleteHelper<T extends HoodieRecordPayload,R> extends BaseDeleteHelper<T, JavaRDD<HoodieRecord<T>>,
+    JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>,R> {
   private SparkDeleteHelper() {
   }
 
@@ -96,6 +96,21 @@ public class SparkDeleteHelper<T extends HoodieRecordPayload> extends BaseDelete
         JavaRDD<WriteStatus>,
         JavaPairRDD<HoodieKey,
         Option<Pair<String, String>>>> deleteExecutor) {
+  @Override
+  public HoodieWriteMetadata<JavaRDD<WriteStatus>> execute(String instantTime,
+                                                           JavaRDD<HoodieKey> keys,
+                                                           HoodieEngineContext context,
+                                                           HoodieWriteConfig config,
+                                                           HoodieTable<T, JavaRDD<HoodieRecord<T>>,
+                                                               JavaRDD<HoodieKey>,
+                                                               JavaRDD<WriteStatus>,
+                                                               JavaPairRDD<HoodieKey,
+                                                                   Option<Pair<String, String>>>> table,
+                                                           BaseCommitActionExecutor<T, JavaRDD<HoodieRecord<T>>,
+                                                               JavaRDD<HoodieKey>,
+                                                               JavaRDD<WriteStatus>,
+                                                               JavaPairRDD<HoodieKey,
+                                                                   Option<Pair<String, String>>>,R> deleteExecutor) {
     try {
       HoodieWriteMetadata result = null;
       JavaRDD<HoodieKey> dedupedKeys = keys;
