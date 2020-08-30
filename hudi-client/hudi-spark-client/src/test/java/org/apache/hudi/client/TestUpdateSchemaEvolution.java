@@ -27,8 +27,9 @@ import org.apache.hudi.common.testutils.HoodieTestUtils;
 import org.apache.hudi.common.testutils.RawTripTestPayload;
 import org.apache.hudi.common.util.ParquetUtils;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.io.HoodieCreateHandle;
-import org.apache.hudi.io.HoodieMergeHandle;
+import org.apache.hudi.io.HoodieSparkCreateHandle;
+import org.apache.hudi.io.HoodieSparkMergeHandle;
+import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.testutils.HoodieClientTestHarness;
 
@@ -72,7 +73,7 @@ public class TestUpdateSchemaEvolution extends HoodieClientTestHarness {
   public void testSchemaEvolutionOnUpdate() throws Exception {
     // Create a bunch of records with a old version of schema
     final HoodieWriteConfig config = makeHoodieClientConfig("/exampleSchema.txt");
-    final HoodieTable<?> table = HoodieTable.create(config, hadoopConf);
+    final HoodieSparkTable<?> table = HoodieSparkTable.create(config, context);
 
     final List<WriteStatus> statuses = jsc.parallelize(Arrays.asList(1)).map(x -> {
       String recordStr1 = "{\"_row_key\":\"8eb5b87a-1feh-4edd-87b4-6ec96dc405a0\","
@@ -94,8 +95,8 @@ public class TestUpdateSchemaEvolution extends HoodieClientTestHarness {
 
       Map<String, HoodieRecord> insertRecordMap = insertRecords.stream()
           .collect(Collectors.toMap(r -> r.getRecordKey(), Function.identity()));
-      HoodieCreateHandle createHandle =
-          new HoodieCreateHandle(config, "100", table, rowChange1.getPartitionPath(), "f1-0", insertRecordMap, supplier);
+      HoodieSparkCreateHandle createHandle =
+          new HoodieSparkCreateHandle(config, "100", table, rowChange1.getPartitionPath(), "f1-0", insertRecordMap, supplier);
       createHandle.write();
       return createHandle.close();
     }).collect();
@@ -109,7 +110,7 @@ public class TestUpdateSchemaEvolution extends HoodieClientTestHarness {
     final WriteStatus insertResult = statuses.get(0);
     String fileId = insertResult.getFileId();
 
-    final HoodieTable table2 = HoodieTable.create(config2, hadoopConf);
+    final HoodieSparkTable table2 = HoodieSparkTable.create(config2, context);
     assertEquals(1, jsc.parallelize(Arrays.asList(1)).map(x -> {
       // New content with values for the newly added field
       String recordStr1 = "{\"_row_key\":\"8eb5b87a-1feh-4edd-87b4-6ec96dc405a0\","
@@ -124,7 +125,7 @@ public class TestUpdateSchemaEvolution extends HoodieClientTestHarness {
       updateRecords.add(record1);
 
       assertDoesNotThrow(() -> {
-        HoodieMergeHandle mergeHandle = new HoodieMergeHandle(config2, "101", table2,
+        HoodieSparkMergeHandle mergeHandle = new HoodieSparkMergeHandle(config2, "101", table2,
             updateRecords.iterator(), record1.getPartitionPath(), fileId, supplier);
         Configuration conf = new Configuration();
         AvroReadSupport.setAvroReadSchema(conf, mergeHandle.getWriterSchemaWithMetafields());

@@ -82,8 +82,8 @@ public class TestMultiFS extends HoodieClientTestHarness {
     HoodieWriteConfig cfg = getHoodieWriteConfig(dfsBasePath);
     HoodieWriteConfig localConfig = getHoodieWriteConfig(tablePath);
 
-    try (HoodieWriteClient hdfsWriteClient = getHoodieWriteClient(cfg);
-        HoodieWriteClient localWriteClient = getHoodieWriteClient(localConfig)) {
+    try (HoodieSparkWriteClient hdfsWriteClient = getHoodieWriteClient(cfg);
+         HoodieSparkWriteClient localWriteClient = getHoodieWriteClient(localConfig)) {
 
       // Write generated data to hdfs (only inserts)
       String readCommitTime = hdfsWriteClient.startCommit();

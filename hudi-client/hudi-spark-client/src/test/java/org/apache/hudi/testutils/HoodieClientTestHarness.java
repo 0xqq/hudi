@@ -18,6 +18,9 @@
 package org.apache.hudi.testutils;
 
 import org.apache.hudi.client.HoodieReadClient;
+import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkTaskContextSupplier;
+import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.fs.FSUtils;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
@@ -58,6 +61,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
   
   private String testMethodName;
   protected transient JavaSparkContext jsc = null;
+  protected transient HoodieSparkEngineContext context = null;
   protected transient Configuration hadoopConf = null;
   protected transient SQLContext sqlContext;
   protected transient FileSystem fs;
@@ -65,7 +69,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
   protected transient ExecutorService executorService;
   protected transient HoodieTableMetaClient metaClient;
   private static AtomicInteger instantGen = new AtomicInteger(1);
-  protected transient HoodieWriteClient writeClient;
+  protected transient HoodieSparkWriteClient writeClient;
   protected transient HoodieReadClient readClient;
   protected transient HoodieTableFileSystemView tableView;
 
@@ -127,6 +131,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
 
     // SQLContext stuff
     sqlContext = new SQLContext(jsc);
+    context = new HoodieSparkEngineContext(jsc);
   }
 
   /**
@@ -152,6 +157,11 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
       jsc.close();
       jsc.stop();
       jsc = null;
+    }
+
+    if (context != null) {
+      LOG.info("Closing spark engine context used in previous test-case");
+      context = null;
     }
   }
 
@@ -310,26 +320,21 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
     }
   }
 
-  public HoodieWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) {
+  public HoodieSparkWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) {
     return getHoodieWriteClient(cfg, false);
   }
 
-  public HoodieWriteClient getHoodieWriteClient(HoodieWriteConfig cfg, boolean rollbackInflightCommit) {
-    return getHoodieWriteClient(cfg, rollbackInflightCommit, HoodieIndex.createIndex(cfg));
-  }
-
   public HoodieReadClient getHoodieReadClient(String basePath) {
-    readClient = new HoodieReadClient(jsc, basePath, SQLContext.getOrCreate(jsc.sc()));
+    readClient = new HoodieReadClient(context, basePath, SQLContext.getOrCreate(jsc.sc()));
     return readClient;
   }
 
-  public HoodieWriteClient getHoodieWriteClient(HoodieWriteConfig cfg, boolean rollbackInflightCommit,
-      HoodieIndex index) {
+  public HoodieSparkWriteClient getHoodieWriteClient(HoodieWriteConfig cfg, boolean rollbackInflightCommit) {
     if (null != writeClient) {
       writeClient.close();
       writeClient = null;
     }
-    writeClient = new HoodieWriteClient(jsc, cfg, rollbackInflightCommit, index);
+    writeClient = new HoodieSparkWriteClient(context, cfg, rollbackInflightCommit);
     return writeClient;
   }
 

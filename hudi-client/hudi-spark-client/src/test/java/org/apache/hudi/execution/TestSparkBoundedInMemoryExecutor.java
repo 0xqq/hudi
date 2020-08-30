@@ -24,7 +24,7 @@ import org.apache.hudi.common.testutils.HoodieTestDataGenerator;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.common.util.queue.BoundedInMemoryQueueConsumer;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.execution.LazyInsertIterable.HoodieInsertValueGenResult;
+import static org.apache.hudi.execution.BaseLazyInsertIterable.HoodieInsertValueGenResult;
 import org.apache.hudi.testutils.HoodieClientTestHarness;
 
 import org.apache.avro.generic.IndexedRecord;
@@ -36,7 +36,7 @@ import java.util.List;
 
 import scala.Tuple2;
 
-import static org.apache.hudi.execution.LazyInsertIterable.getTransformFunction;
+import static org.apache.hudi.execution.BaseLazyInsertIterable.getTransformFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;

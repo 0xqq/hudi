@@ -35,7 +35,6 @@ import org.apache.hudi.common.model.HoodieRecordPayload;
 import org.apache.hudi.common.model.HoodieWriteStat;
 import org.apache.hudi.common.model.WriteOperationType;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
-import org.apache.hudi.common.table.HoodieTableVersion;
 import org.apache.hudi.common.table.timeline.HoodieActiveTimeline;
 import org.apache.hudi.common.table.timeline.HoodieInstant;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
@@ -255,18 +254,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param instantTime Instant time of the commit
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O upsert(I records, final String instantTime) {
-    HoodieTable<T, I, K, O, P> table = getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
-    table.validateUpsertSchema();
-    setOperationType(WriteOperationType.UPSERT);
-    this.asyncCleanerService = startAsyncCleaningIfEnabled(this, instantTime);
-
-    HoodieWriteMetadata<O> result = table.upsert(context, instantTime, records);
-    if (result.getIndexLookupDuration().isPresent()) {
-      metrics.updateIndexMetrics(LOOKUP_STR, result.getIndexLookupDuration().get().toMillis());
-    }
-    return postWrite(result, instantTime, table);
-  }
+  public abstract O upsert(I records, final String instantTime);
 
   /**
    * Upserts the given prepared records into the Hoodie table, at the supplied instantTime.
@@ -277,14 +265,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param instantTime    Instant time of the commit
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O upsertPreppedRecords(I preppedRecords, final String instantTime) {
-    HoodieTable<T, I, K, O, P> table = getTableAndInitCtx(WriteOperationType.UPSERT_PREPPED, instantTime);
-    table.validateUpsertSchema();
-    setOperationType(WriteOperationType.UPSERT_PREPPED);
-    this.asyncCleanerService = startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata<O> result = table.upsertPrepped(context, instantTime, preppedRecords);
-    return postWrite(result, instantTime, table);
-  }
+  public abstract O upsertPreppedRecords(I preppedRecords, final String instantTime);
 
   /**
    * Inserts the given HoodieRecords, into the table. This API is intended to be used for normal writes.
@@ -296,14 +277,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param instantTime Instant time of the commit
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O insert(I records, final String instantTime) {
-    HoodieTable<T, I, K, O, P> table = getTableAndInitCtx(WriteOperationType.INSERT, instantTime);
-    table.validateInsertSchema();
-    setOperationType(WriteOperationType.INSERT);
-    this.asyncCleanerService = startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata<O> result = table.insert(context, instantTime, records);
-    return postWrite(result, instantTime, table);
-  }
+  public abstract O insert(I records, final String instantTime);
 
   /**
    * Inserts the given prepared records into the Hoodie table, at the supplied instantTime.
@@ -316,14 +290,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param instantTime    Instant time of the commit
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O insertPreppedRecords(I preppedRecords, final String instantTime) {
-    HoodieTable<T, I, K, O, P> table = getTableAndInitCtx(WriteOperationType.INSERT_PREPPED, instantTime);
-    table.validateInsertSchema();
-    setOperationType(WriteOperationType.INSERT_PREPPED);
-    this.asyncCleanerService = startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata<O> result = table.insertPrepped(context, instantTime, preppedRecords);
-    return postWrite(result, instantTime, table);
-  }
+  public abstract O insertPreppedRecords(I preppedRecords, final String instantTime);
 
   /**
    * Loads the given HoodieRecords, as inserts into the table. This is suitable for doing big bulk loads into a Hoodie
@@ -336,9 +303,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param instantTime Instant time of the commit
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O bulkInsert(I records, final String instantTime) {
-    return bulkInsert(records, instantTime, Option.empty());
-  }
+  public abstract O bulkInsert(I records, final String instantTime);
 
   /**
    * Loads the given HoodieRecords, as inserts into the table. This is suitable for doing big bulk loads into a Hoodie
@@ -355,15 +320,8 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    *                                         into hoodie.
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O bulkInsert(I records, final String instantTime,
-                      Option<BulkInsertPartitioner<I>> userDefinedBulkInsertPartitioner) {
-    HoodieTable<T, I, K, O, P> table = getTableAndInitCtx(WriteOperationType.BULK_INSERT, instantTime);
-    table.validateInsertSchema();
-    setOperationType(WriteOperationType.BULK_INSERT);
-    this.asyncCleanerService = startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata<O> result = table.bulkInsert(context, instantTime, records, userDefinedBulkInsertPartitioner);
-    return postWrite(result, instantTime, table);
-  }
+  public abstract O bulkInsert(I records, final String instantTime,
+                      Option<BulkInsertPartitioner<I>> userDefinedBulkInsertPartitioner);
 
 
   /**
@@ -382,15 +340,8 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    *                              into hoodie.
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O bulkInsertPreppedRecords(I preppedRecords, final String instantTime,
-                                    Option<BulkInsertPartitioner<I>> bulkInsertPartitioner) {
-    HoodieTable<T, I, K, O, P> table = getTableAndInitCtx(WriteOperationType.BULK_INSERT_PREPPED, instantTime);
-    table.validateInsertSchema();
-    setOperationType(WriteOperationType.BULK_INSERT_PREPPED);
-    this.asyncCleanerService = startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata<O> result = table.bulkInsertPrepped(context, instantTime, preppedRecords, bulkInsertPartitioner);
-    return postWrite(result, instantTime, table);
-  }
+  public abstract O bulkInsertPreppedRecords(I preppedRecords, final String instantTime,
+                                    Option<BulkInsertPartitioner<I>> bulkInsertPartitioner);
 
   /**
    * Deletes a list of {@link HoodieKey}s from the Hoodie table, at the supplied instantTime {@link HoodieKey}s will be
@@ -400,12 +351,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param instantTime Commit time handle
    * @return JavaRDD[WriteStatus] - RDD of WriteStatus to inspect errors and counts
    */
-  public O delete(K keys, final String instantTime) {
-    HoodieTable<T, I, K, O, P> table = getTableAndInitCtx(WriteOperationType.DELETE, instantTime);
-    setOperationType(WriteOperationType.DELETE);
-    HoodieWriteMetadata<O> result = table.delete(context, instantTime, keys);
-    return postWrite(result, instantTime, table);
-  }
+  public abstract O delete(K keys, final String instantTime);
 
   /**
    * Common method containing steps to be performed after write (upsert/insert/..) operations including auto-commit.
@@ -415,24 +361,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param hoodieTable Hoodie Table
    * @return Write Status
    */
-  private O postWrite(HoodieWriteMetadata<O> result, String instantTime, HoodieTable<T, I, K, O, P> hoodieTable) {
-    if (result.getIndexLookupDuration().isPresent()) {
-      metrics.updateIndexMetrics(getOperationType().name(), result.getIndexUpdateDuration().get().toMillis());
-    }
-    if (result.isCommitted()) {
-      // Perform post commit operations.
-      if (result.getFinalizeDuration().isPresent()) {
-        metrics.updateFinalizeWriteMetrics(result.getFinalizeDuration().get().toMillis(),
-            result.getWriteStats().get().size());
-      }
-
-      postCommit(hoodieTable, result.getCommitMetadata().get(), instantTime, Option.empty());
-
-      emitCommitMetrics(instantTime, result.getCommitMetadata().get(),
-          hoodieTable.getMetaClient().getCommitActionType());
-    }
-    return result.getWriteStatuses();
-  }
+  protected abstract O postWrite(HoodieWriteMetadata<O> result, String instantTime, HoodieTable<T, I, K, O, P> hoodieTable);
 
   /**
    * Post Commit Hook. Derived classes use this method to perform post-commit processing
@@ -746,22 +675,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param compactionInstantTime Compaction Instant Time
    * @return RDD of Write Status
    */
-  private O compact(String compactionInstantTime, boolean shouldComplete) {
-    HoodieTable<T, I, K, O, P> table = createTable(config, hadoopConf);
-    HoodieTimeline pendingCompactionTimeline = table.getActiveTimeline().filterPendingCompactionTimeline();
-    HoodieInstant inflightInstant = HoodieTimeline.getCompactionInflightInstant(compactionInstantTime);
-    if (pendingCompactionTimeline.containsInstant(inflightInstant)) {
-      rollbackInflightCompaction(inflightInstant, table);
-      table.getMetaClient().reloadActiveTimeline();
-    }
-    compactionTimer = metrics.getCompactionCtx();
-    HoodieWriteMetadata<O> compactionMetadata = table.compact(context, compactionInstantTime);
-    O statuses = compactionMetadata.getWriteStatuses();
-    if (shouldComplete && compactionMetadata.getCommitMetadata().isPresent()) {
-      completeCompaction(compactionMetadata.getCommitMetadata().get(), statuses, table, compactionInstantTime);
-    }
-    return statuses;
-  }
+  protected abstract O compact(String compactionInstantTime, boolean shouldComplete);
 
   /**
    * Performs a compaction operation on a table, serially before or after an insert/upsert action.
@@ -813,15 +727,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param instantTime   current inflight instant time
    * @return HoodieTable
    */
-  protected HoodieTable<T, I, K, O, P> getTableAndInitCtx(WriteOperationType operationType, String instantTime) {
-    HoodieTableMetaClient metaClient = createMetaClient(true);
-    getUpgradeDowngrade(metaClient).run(metaClient, HoodieTableVersion.current(), config, context, instantTime);
-    return getTableAndInitCtx(metaClient, operationType);
-  }
-
-  protected abstract BaseUpgradeDowngrade getUpgradeDowngrade(HoodieTableMetaClient metaClient);
-
-  protected abstract HoodieTable<T, I, K, O, P> getTableAndInitCtx(HoodieTableMetaClient metaClient, WriteOperationType operationType);
+  protected abstract HoodieTable<T, I, K, O, P> getTableAndInitCtx(WriteOperationType operationType, String instantTime);
 
   /**
    * Sets write schema from last instant since deletes may not have schema set in the config.

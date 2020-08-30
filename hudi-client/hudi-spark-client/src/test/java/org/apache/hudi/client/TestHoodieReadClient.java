@@ -52,7 +52,7 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    */
   @Test
   public void testReadFilterExistAfterInsert() throws Exception {
-    testReadFilterExist(getConfig(), HoodieWriteClient::insert);
+    testReadFilterExist(getConfig(), HoodieSparkWriteClient::insert);
   }
 
   /**
@@ -60,7 +60,7 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    */
   @Test
   public void testReadFilterExistAfterInsertPrepped() throws Exception {
-    testReadFilterExist(getConfig(), HoodieWriteClient::insertPreppedRecords);
+    testReadFilterExist(getConfig(), HoodieSparkWriteClient::insertPreppedRecords);
   }
 
   /**
@@ -68,7 +68,7 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    */
   @Test
   public void testReadFilterExistAfterBulkInsert() throws Exception {
-    testReadFilterExist(getConfigBuilder().withBulkInsertParallelism(1).build(), HoodieWriteClient::bulkInsert);
+    testReadFilterExist(getConfigBuilder().withBulkInsertParallelism(1).build(), HoodieSparkWriteClient::bulkInsert);
   }
 
   /**
@@ -84,7 +84,7 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
 
   @Test
   public void testReadROViewFailsWithoutSqlContext() {
-    HoodieReadClient readClient = new HoodieReadClient(jsc, getConfig());
+    HoodieReadClient readClient = new HoodieReadClient(context, getConfig());
     JavaRDD<HoodieKey> recordsRDD = jsc.parallelize(new ArrayList<>(), 1);
     assertThrows(IllegalStateException.class, () -> {
       readClient.readROView(recordsRDD, 1);
@@ -100,8 +100,8 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    * @throws Exception in case of error
    */
   private void testReadFilterExist(HoodieWriteConfig config,
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> writeFn) throws Exception {
-    try (HoodieWriteClient writeClient = getHoodieWriteClient(config);) {
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> writeFn) throws Exception {
+    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
       HoodieReadClient readClient = getHoodieReadClient(config.getBasePath());
       String newCommitTime = writeClient.startCommit();
       List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 100);
@@ -153,7 +153,7 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    */
   @Test
   public void testTagLocationAfterInsert() throws Exception {
-    testTagLocation(getConfig(), HoodieWriteClient::insert, HoodieWriteClient::upsert, false);
+    testTagLocation(getConfig(), HoodieSparkWriteClient::insert, HoodieSparkWriteClient::upsert, false);
   }
 
   /**
@@ -161,7 +161,7 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    */
   @Test
   public void testTagLocationAfterInsertPrepped() throws Exception {
-    testTagLocation(getConfig(), HoodieWriteClient::insertPreppedRecords, HoodieWriteClient::upsertPreppedRecords,
+    testTagLocation(getConfig(), HoodieSparkWriteClient::insertPreppedRecords, HoodieSparkWriteClient::upsertPreppedRecords,
         true);
   }
 
@@ -170,8 +170,8 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    */
   @Test
   public void testTagLocationAfterBulkInsert() throws Exception {
-    testTagLocation(getConfigBuilder().withBulkInsertParallelism(1).build(), HoodieWriteClient::bulkInsert,
-        HoodieWriteClient::upsert, false);
+    testTagLocation(getConfigBuilder().withBulkInsertParallelism(1).build(), HoodieSparkWriteClient::bulkInsert,
+        HoodieSparkWriteClient::upsert, false);
   }
 
   /**
@@ -182,7 +182,7 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
     testTagLocation(
         getConfigBuilder().withBulkInsertParallelism(1).build(), (writeClient, recordRDD, instantTime) -> writeClient
             .bulkInsertPreppedRecords(recordRDD, instantTime, Option.empty()),
-        HoodieWriteClient::upsertPreppedRecords, true);
+        HoodieSparkWriteClient::upsertPreppedRecords, true);
   }
 
   /**
@@ -195,10 +195,10 @@ public class TestHoodieReadClient extends HoodieClientTestBase {
    * @throws Exception in case of error
    */
   private void testTagLocation(HoodieWriteConfig hoodieWriteConfig,
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> updateFn, boolean isPrepped)
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> updateFn, boolean isPrepped)
       throws Exception {
-    try (HoodieWriteClient client = getHoodieWriteClient(hoodieWriteConfig);) {
+    try (HoodieSparkWriteClient client = getHoodieWriteClient(hoodieWriteConfig);) {
       // Write 1 (only inserts)
       String newCommitTime = "001";
       String initCommitTime = "000";

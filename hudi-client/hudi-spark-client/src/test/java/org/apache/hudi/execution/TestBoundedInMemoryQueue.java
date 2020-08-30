@@ -30,7 +30,7 @@ import org.apache.hudi.common.util.queue.BoundedInMemoryQueueProducer;
 import org.apache.hudi.common.util.queue.FunctionBasedQueueProducer;
 import org.apache.hudi.common.util.queue.IteratorBasedQueueProducer;
 import org.apache.hudi.exception.HoodieException;
-import org.apache.hudi.execution.LazyInsertIterable.HoodieInsertValueGenResult;
+import org.apache.hudi.execution.BaseLazyInsertIterable.HoodieInsertValueGenResult;
 import org.apache.hudi.testutils.HoodieClientTestHarness;
 
 import org.apache.avro.generic.IndexedRecord;
@@ -53,7 +53,7 @@ import java.util.stream.IntStream;
 
 import scala.Tuple2;
 
-import static org.apache.hudi.execution.LazyInsertIterable.getTransformFunction;
+import static org.apache.hudi.execution.BaseLazyInsertIterable.getTransformFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
