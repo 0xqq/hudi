@@ -30,7 +30,7 @@ import org.apache.hudi.common.table.timeline.HoodieInstant;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.config.HoodieCompactionConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.table.HoodieTimelineArchiveLog;
+import org.apache.hudi.table.HoodieSparkTimelineArchiveLog;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,8 +92,9 @@ public class TestArchivedCommitsCommand extends AbstractShellIntegrationTest {
     metaClient.getActiveTimeline().reload().getAllCommitsTimeline().filterCompletedInstants();
 
     // archive
-    HoodieTimelineArchiveLog archiveLog = new HoodieTimelineArchiveLog(cfg, hadoopConf);
-    archiveLog.archiveIfRequired(jsc);
+
+    HoodieSparkTimelineArchiveLog archiveLog = new HoodieSparkTimelineArchiveLog(cfg, context);
+    archiveLog.archiveIfRequired(context);
   }
 
   @AfterEach

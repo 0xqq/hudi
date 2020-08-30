@@ -24,7 +24,7 @@ import org.apache.hudi.common.model.HoodieWriteStat;
 import org.apache.hudi.common.testutils.HoodieTestDataGenerator;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieInsertException;
-import org.apache.hudi.table.HoodieTable;
+import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.testutils.HoodieClientTestHarness;
 
 import org.apache.spark.sql.Dataset;
@@ -78,7 +78,7 @@ public class TestHoodieRowCreateHandle extends HoodieClientTestHarness {
   public void testRowCreateHandle() throws IOException {
     // init config and table
     HoodieWriteConfig cfg = getConfigBuilder(basePath).build();
-    HoodieTable table = HoodieTable.create(metaClient, cfg, hadoopConf);
+    HoodieSparkTable table = HoodieSparkTable.create(cfg, context, metaClient);
     List<String> fileNames = new ArrayList<>();
     List<String> fileAbsPaths = new ArrayList<>();
 
@@ -119,7 +119,7 @@ public class TestHoodieRowCreateHandle extends HoodieClientTestHarness {
   public void testGlobalFailure() throws IOException {
     // init config and table
     HoodieWriteConfig cfg = getConfigBuilder(basePath).build();
-    HoodieTable table = HoodieTable.create(metaClient, cfg, hadoopConf);
+    HoodieSparkTable table = HoodieSparkTable.create(cfg, context, metaClient);
     String partitionPath = HoodieTestDataGenerator.DEFAULT_PARTITION_PATHS[0];
 
     // init some args
@@ -172,7 +172,7 @@ public class TestHoodieRowCreateHandle extends HoodieClientTestHarness {
   public void testInstantiationFailure() throws IOException {
     // init config and table
     HoodieWriteConfig cfg = getConfigBuilder(basePath).withPath("/dummypath/abc/").build();
-    HoodieTable table = HoodieTable.create(metaClient, cfg, hadoopConf);
+    HoodieSparkTable table = HoodieSparkTable.create(cfg, context, metaClient);
 
     try {
       new HoodieRowCreateHandle(table, cfg, " def", UUID.randomUUID().toString(), "001", RANDOM.nextInt(100000), RANDOM.nextLong(), RANDOM.nextLong(), STRUCT_TYPE);

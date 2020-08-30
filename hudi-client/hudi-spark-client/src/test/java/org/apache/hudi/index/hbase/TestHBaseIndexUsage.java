@@ -35,7 +35,7 @@ public class TestHBaseIndexUsage {
   @Test
   public void testFeatureSupport() {
     HoodieWriteConfig config = mock(HoodieWriteConfig.class);
-    HBaseIndex index = new HBaseIndex(config);
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
 
     assertTrue(index.canIndexLogFiles());
     assertThrows(UnsupportedOperationException.class, () -> {

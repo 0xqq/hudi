@@ -19,6 +19,7 @@
 package org.apache.hudi.table.action.compact;
 
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
+import org.apache.hudi.client.HoodieSparkWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.fs.FSUtils;
 import org.apache.hudi.common.model.FileSlice;
@@ -39,8 +40,8 @@ import org.apache.hudi.config.HoodieStorageConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieNotSupportedException;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.index.bloom.HoodieBloomIndex;
-import org.apache.hudi.table.HoodieTable;
+import org.apache.hudi.index.bloom.HoodieSparkBloomIndex;
+import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.testutils.HoodieClientTestHarness;
 
 import org.apache.hadoop.conf.Configuration;
@@ -103,11 +104,11 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
   @Test
   public void testCompactionOnCopyOnWriteFail() throws Exception {
     metaClient = HoodieTestUtils.init(hadoopConf, basePath, HoodieTableType.COPY_ON_WRITE);
-    HoodieTable<?> table = HoodieTable.create(metaClient, getConfig(), hadoopConf);
+    HoodieSparkTable<?> table = HoodieSparkTable.create(getConfig(), context, metaClient);
     String compactionInstantTime = HoodieActiveTimeline.createNewInstantTime();
     assertThrows(HoodieNotSupportedException.class, () -> {
-      table.scheduleCompaction(jsc, compactionInstantTime, Option.empty());
-      table.compact(jsc, compactionInstantTime);
+      table.scheduleCompaction(context, compactionInstantTime, Option.empty());
+      table.compact(context, compactionInstantTime);
     });
   }
 
@@ -115,8 +116,8 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
   public void testCompactionEmpty() throws Exception {
     HoodieWriteConfig config = getConfig();
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    HoodieTable table = HoodieTable.create(metaClient, config, hadoopConf);
-    try (HoodieWriteClient writeClient = getHoodieWriteClient(config);) {
+    HoodieSparkTable table = HoodieSparkTable.create(config, context, metaClient);
+    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
 
       String newCommitTime = writeClient.startCommit();
       List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 100);
@@ -124,7 +125,7 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
       writeClient.insert(recordsRDD, newCommitTime).collect();
 
       String compactionInstantTime = HoodieActiveTimeline.createNewInstantTime();
-      Option<HoodieCompactionPlan> plan = table.scheduleCompaction(jsc, compactionInstantTime, Option.empty());
+      Option<HoodieCompactionPlan> plan = table.scheduleCompaction(context, compactionInstantTime, Option.empty());
       assertFalse(plan.isPresent(), "If there is nothing to compact, result will be empty");
     }
   }
@@ -133,7 +134,7 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
   public void testWriteStatusContentsAfterCompaction() throws Exception {
     // insert 100 records
     HoodieWriteConfig config = getConfig();
-    try (HoodieWriteClient writeClient = getHoodieWriteClient(config)) {
+    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config)) {
       String newCommitTime = "100";
       writeClient.startCommitWithTime(newCommitTime);
 
@@ -142,14 +143,14 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
       writeClient.insert(recordsRDD, newCommitTime).collect();
 
       // Update all the 100 records
-      HoodieTable table = HoodieTable.create(config, hadoopConf);
+      HoodieSparkTable table = HoodieSparkTable.create(config, context);
       newCommitTime = "101";
       writeClient.startCommitWithTime(newCommitTime);
 
       List<HoodieRecord> updatedRecords = dataGen.generateUpdates(newCommitTime, records);
       JavaRDD<HoodieRecord> updatedRecordsRDD = jsc.parallelize(updatedRecords, 1);
-      HoodieIndex index = new HoodieBloomIndex<>(config);
-      updatedRecords = index.tagLocation(updatedRecordsRDD, jsc, table).collect();
+      HoodieIndex index = new HoodieSparkBloomIndex<>(config);
+      updatedRecords = ((JavaRDD<HoodieRecord>)index.tagLocation(updatedRecordsRDD, context, table)).collect();
 
       // Write them to corresponding avro logfiles. Also, set the state transition properly.
       HoodieTestUtils.writeRecordsToLogFiles(fs, metaClient.getBasePath(),
@@ -160,7 +161,7 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
       metaClient.reloadActiveTimeline();
 
       // Verify that all data file has one log file
-      table = HoodieTable.create(config, hadoopConf);
+      table = HoodieSparkTable.create(config, context);
       for (String partitionPath : dataGen.getPartitionPaths()) {
         List<FileSlice> groupedLogFiles =
             table.getSliceView().getLatestFileSlices(partitionPath).collect(Collectors.toList());
@@ -173,11 +174,11 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
       createInflightDeltaCommit(basePath, newCommitTime);
 
       // Do a compaction
-      table = HoodieTable.create(config, hadoopConf);
+      table = HoodieSparkTable.create(config, context);
       String compactionInstantTime = "102";
-      table.scheduleCompaction(jsc, compactionInstantTime, Option.empty());
+      table.scheduleCompaction(context, compactionInstantTime, Option.empty());
       table.getMetaClient().reloadActiveTimeline();
-      JavaRDD<WriteStatus> result = table.compact(jsc, compactionInstantTime).getWriteStatuses();
+      JavaRDD<WriteStatus> result = (JavaRDD<WriteStatus>) table.compact(context, compactionInstantTime).getWriteStatuses();
 
       // Verify that all partition paths are present in the WriteStatus result
       for (String partitionPath : dataGen.getPartitionPaths()) {

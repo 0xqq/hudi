@@ -20,7 +20,7 @@ package org.apache.hudi.cli.testutils;
 
 import org.apache.hudi.avro.model.HoodieWriteStat;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
-import org.apache.hudi.table.HoodieTimelineArchiveLog;
+import org.apache.hudi.table.HoodieSparkTimelineArchiveLog;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,7 +36,7 @@ public class HoodieTestCommitUtilities {
    */
   public static org.apache.hudi.avro.model.HoodieCommitMetadata convertAndOrderCommitMetadata(
       HoodieCommitMetadata hoodieCommitMetadata) {
-    return orderCommitMetadata(HoodieTimelineArchiveLog.convertCommitMetadata(hoodieCommitMetadata));
+    return orderCommitMetadata(HoodieSparkTimelineArchiveLog.convertCommitMetadata(hoodieCommitMetadata));
   }
 
   /**

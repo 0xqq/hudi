@@ -18,6 +18,7 @@
 
 package org.apache.hudi.table.upgrade;
 
+import org.apache.hudi.client.HoodieSparkWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.model.FileSlice;
 import org.apache.hudi.common.model.HoodieFileGroup;
@@ -32,8 +33,9 @@ import org.apache.hudi.common.testutils.HoodieTestDataGenerator;
 import org.apache.hudi.common.testutils.HoodieTestUtils;
 import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
+import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.table.HoodieTable;
-import org.apache.hudi.table.MarkerFiles;
+import org.apache.hudi.table.SparkMarkerFiles;
 import org.apache.hudi.testutils.Assertions;
 import org.apache.hudi.testutils.HoodieClientTestBase;
 import org.apache.hudi.testutils.HoodieClientTestUtils;
@@ -67,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests {@link UpgradeDowngrade}.
+ * Unit tests {@link SparkUpgradeDowngrade}.
  */
 public class TestUpgradeDowngrade extends HoodieClientTestBase {
 
@@ -100,18 +102,18 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
       metaClient = HoodieTestUtils.init(hadoopConf, basePath, HoodieTableType.MERGE_ON_READ);
     }
     HoodieWriteConfig cfg = getConfigBuilder().withAutoCommit(false).withRollbackUsingMarkers(false).withProps(params).build();
-    HoodieWriteClient client = getHoodieWriteClient(cfg);
+    HoodieSparkWriteClient client = getHoodieWriteClient(cfg);
 
     // prepare data. Make 2 commits, in which 2nd is not committed.
     List<FileSlice> firstPartitionCommit2FileSlices = new ArrayList<>();
     List<FileSlice> secondPartitionCommit2FileSlices = new ArrayList<>();
     Pair<List<HoodieRecord>, List<HoodieRecord>> inputRecords = twoUpsertCommitDataWithTwoPartitions(firstPartitionCommit2FileSlices, secondPartitionCommit2FileSlices, cfg, client, false);
 
-    HoodieTable<?> table = this.getHoodieTable(metaClient, cfg);
+    HoodieSparkTable<?> table = this.getHoodieTable(metaClient, cfg);
     HoodieInstant commitInstant = table.getPendingCommitTimeline().lastInstant().get();
 
     // delete one of the marker files in 2nd commit if need be.
-    MarkerFiles markerFiles = new MarkerFiles(table, commitInstant.getTimestamp());
+    SparkMarkerFiles markerFiles = new SparkMarkerFiles(table, commitInstant.getTimestamp());
     List<String> markerPaths = markerFiles.allMarkerFilePaths();
     if (deletePartialMarkerFiles) {
       String toDeleteMarkerFile = markerPaths.get(0);
@@ -127,7 +129,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
     }
 
     // should re-create marker files for 2nd commit since its pending.
-    UpgradeDowngrade.run(metaClient, HoodieTableVersion.ONE, cfg, jsc, null);
+    new SparkUpgradeDowngrade(metaClient, cfg, context).run(metaClient, HoodieTableVersion.ONE, cfg, context, null);
 
     // assert marker files
     assertMarkerFilesForUpgrade(table, commitInstant, firstPartitionCommit2FileSlices, secondPartitionCommit2FileSlices);
@@ -142,7 +144,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
     // Check the entire dataset has all records only from 1st commit and 3rd commit since 2nd is expected to be rolledback.
     assertRows(inputRecords.getKey(), thirdBatch);
     if (induceResiduesFromPrevUpgrade) {
-      assertFalse(fs.exists(new Path(metaClient.getMetaPath(), UpgradeDowngrade.HOODIE_UPDATED_PROPERTY_FILE)));
+      assertFalse(fs.exists(new Path(metaClient.getMetaPath(), SparkUpgradeDowngrade.HOODIE_UPDATED_PROPERTY_FILE)));
     }
   }
 
@@ -156,18 +158,18 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
       metaClient = HoodieTestUtils.init(hadoopConf, basePath, HoodieTableType.MERGE_ON_READ);
     }
     HoodieWriteConfig cfg = getConfigBuilder().withAutoCommit(false).withRollbackUsingMarkers(false).withProps(params).build();
-    HoodieWriteClient client = getHoodieWriteClient(cfg);
+    HoodieSparkWriteClient client = getHoodieWriteClient(cfg);
 
     // prepare data. Make 2 commits, in which 2nd is not committed.
     List<FileSlice> firstPartitionCommit2FileSlices = new ArrayList<>();
     List<FileSlice> secondPartitionCommit2FileSlices = new ArrayList<>();
     Pair<List<HoodieRecord>, List<HoodieRecord>> inputRecords = twoUpsertCommitDataWithTwoPartitions(firstPartitionCommit2FileSlices, secondPartitionCommit2FileSlices, cfg, client, false);
 
-    HoodieTable<?> table = this.getHoodieTable(metaClient, cfg);
+    HoodieSparkTable<?> table = this.getHoodieTable(metaClient, cfg);
     HoodieInstant commitInstant = table.getPendingCommitTimeline().lastInstant().get();
 
     // delete one of the marker files in 2nd commit if need be.
-    MarkerFiles markerFiles = new MarkerFiles(table, commitInstant.getTimestamp());
+    SparkMarkerFiles markerFiles = new SparkMarkerFiles(table, commitInstant.getTimestamp());
     List<String> markerPaths = markerFiles.allMarkerFilePaths();
     if (deletePartialMarkerFiles) {
       String toDeleteMarkerFile = markerPaths.get(0);
@@ -179,7 +181,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
     prepForDowngrade();
 
     // downgrade should be performed. all marker files should be deleted
-    UpgradeDowngrade.run(metaClient, HoodieTableVersion.ZERO, cfg, jsc, null);
+    new SparkUpgradeDowngrade(metaClient, cfg, context).run(metaClient, HoodieTableVersion.ZERO, cfg, context, null);
 
     // assert marker files
     assertMarkerFilesForDowngrade(table, commitInstant);
@@ -197,21 +199,21 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
 
   private void assertMarkerFilesForDowngrade(HoodieTable table, HoodieInstant commitInstant) throws IOException {
     // Verify recreated marker files are as expected
-    MarkerFiles markerFiles = new MarkerFiles(table, commitInstant.getTimestamp());
+    SparkMarkerFiles markerFiles = new SparkMarkerFiles(table, commitInstant.getTimestamp());
     assertFalse(markerFiles.doesMarkerDirExist());
   }
 
   private void assertMarkerFilesForUpgrade(HoodieTable table, HoodieInstant commitInstant, List<FileSlice> firstPartitionCommit2FileSlices,
                                            List<FileSlice> secondPartitionCommit2FileSlices) throws IOException {
     // Verify recreated marker files are as expected
-    MarkerFiles markerFiles = new MarkerFiles(table, commitInstant.getTimestamp());
+    SparkMarkerFiles markerFiles = new SparkMarkerFiles(table, commitInstant.getTimestamp());
     assertTrue(markerFiles.doesMarkerDirExist());
     List<String> files = markerFiles.allMarkerFilePaths();
 
     assertEquals(2, files.size());
     List<String> actualFiles = new ArrayList<>();
     for (String file : files) {
-      String fileName = MarkerFiles.stripMarkerSuffix(file);
+      String fileName = SparkMarkerFiles.stripMarkerSuffix(file);
       actualFiles.add(fileName);
     }
 
@@ -275,7 +277,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
       params.put(HOODIE_TABLE_TYPE_PROP_NAME, HoodieTableType.MERGE_ON_READ.name());
     }
     HoodieWriteConfig cfg = getConfigBuilder().withAutoCommit(false).withRollbackUsingMarkers(enableMarkedBasedRollback).withProps(params).build();
-    HoodieWriteClient client = getHoodieWriteClient(cfg, true);
+    HoodieSparkWriteClient client = getHoodieWriteClient(cfg, true);
 
     client.startCommitWithTime(newCommitTime);
 
@@ -320,13 +322,13 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
    * @param firstPartitionCommit2FileSlices list to hold file slices in first partition.
    * @param secondPartitionCommit2FileSlices list of hold file slices from second partition.
    * @param cfg instance of {@link HoodieWriteConfig}
-   * @param client instance of {@link HoodieWriteClient} to use.
+   * @param client instance of {@link HoodieSparkWriteClient} to use.
    * @param commitSecondUpsert true if 2nd commit needs to be committed. false otherwise.
    * @return a pair of list of records from 1st and 2nd batch.
    */
   private Pair<List<HoodieRecord>, List<HoodieRecord>> twoUpsertCommitDataWithTwoPartitions(List<FileSlice> firstPartitionCommit2FileSlices,
       List<FileSlice> secondPartitionCommit2FileSlices,
-      HoodieWriteConfig cfg, HoodieWriteClient client,
+      HoodieWriteConfig cfg, HoodieSparkWriteClient client,
       boolean commitSecondUpsert) throws IOException {
     //just generate two partitions
     dataGen = new HoodieTestDataGenerator(new String[] {DEFAULT_FIRST_PARTITION_PATH, DEFAULT_SECOND_PARTITION_PATH});
@@ -388,7 +390,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
 
   private void createResidualFile() throws IOException {
     Path propertyFile = new Path(metaClient.getMetaPath() + "/" + HoodieTableConfig.HOODIE_PROPERTIES_FILE);
-    Path updatedPropertyFile = new Path(metaClient.getMetaPath() + "/" + UpgradeDowngrade.HOODIE_UPDATED_PROPERTY_FILE);
+    Path updatedPropertyFile = new Path(metaClient.getMetaPath() + "/" + SparkUpgradeDowngrade.HOODIE_UPDATED_PROPERTY_FILE);
 
     // Step1: Copy hoodie.properties to hoodie.properties.orig
     FileUtil.copy(metaClient.getFs(), propertyFile, metaClient.getFs(), updatedPropertyFile,

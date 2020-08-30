@@ -18,6 +18,7 @@
 
 package org.apache.hudi.index.hbase;
 
+import org.apache.hudi.client.HoodieSparkWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.model.HoodieTableType;
@@ -32,7 +33,7 @@ import org.apache.hudi.config.HoodieIndexConfig;
 import org.apache.hudi.config.HoodieStorageConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.table.HoodieTable;
+import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.testutils.FunctionalTestHarness;
 
 import org.apache.hadoop.conf.Configuration;
@@ -135,13 +136,13 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
-    try (HoodieWriteClient writeClient = getHoodieWriteClient(config);) {
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
       metaClient = HoodieTableMetaClient.reload(metaClient);
-      HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+      HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
       // Test tagLocation without any entries in index
-      JavaRDD<HoodieRecord> records1 = index.tagLocation(writeRecords, jsc(), hoodieTable);
+      JavaRDD<HoodieRecord> records1 = index.tagLocation(writeRecords, context(), hoodieTable);
       assertEquals(0, records1.filter(record -> record.isCurrentLocationKnown()).count());
 
       // Insert 200 records
@@ -150,15 +151,15 @@ public class TestHBaseIndex extends FunctionalTestHarness {
       assertNoWriteErrors(writeStatues.collect());
 
       // Now tagLocation for these records, hbaseIndex should not tag them since commit never occurred
-      JavaRDD<HoodieRecord> records2 = index.tagLocation(writeRecords, jsc(), hoodieTable);
+      JavaRDD<HoodieRecord> records2 = index.tagLocation(writeRecords, context, hoodieTable);
       assertEquals(0, records2.filter(record -> record.isCurrentLocationKnown()).count());
 
       // Now commit this & update location of records inserted and validate no errors
       writeClient.commit(newCommitTime, writeStatues);
       // Now tagLocation for these records, hbaseIndex should tag them correctly
       metaClient = HoodieTableMetaClient.reload(metaClient);
-      hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
-      List<HoodieRecord> records3 = index.tagLocation(writeRecords, jsc(), hoodieTable).collect();
+      hoodieTable = HoodieSparkTable.create(config, context, metaClient);
+      List<HoodieRecord> records3 = index.tagLocation(writeRecords, context, hoodieTable).collect();
       assertEquals(numRecords, records3.stream().filter(record -> record.isCurrentLocationKnown()).count());
       assertEquals(numRecords, records3.stream().map(record -> record.getKey().getRecordKey()).distinct().count());
       assertEquals(numRecords, records3.stream().filter(record -> (record.getCurrentLocation() != null
@@ -175,14 +176,14 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
-    HoodieWriteClient writeClient = getHoodieWriteClient(config);
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
     writeClient.startCommitWithTime(newCommitTime);
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
     JavaRDD<WriteStatus> writeStatues = writeClient.upsert(writeRecords, newCommitTime);
-    index.tagLocation(writeRecords, jsc(), hoodieTable);
+    index.tagLocation(writeRecords, context, hoodieTable);
 
     // Duplicate upsert and ensure correctness is maintained
     // We are trying to approximately imitate the case when the RDD is recomputed. For RDD creating, driver code is not
@@ -197,8 +198,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
     writeClient.commit(newCommitTime, writeStatues);
     // Now tagLocation for these records, hbaseIndex should tag them correctly
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
-    List<HoodieRecord> taggedRecords = index.tagLocation(writeRecords, jsc(), hoodieTable).collect();
+    hoodieTable = HoodieSparkTable.create(config, context, metaClient);
+    List<HoodieRecord> taggedRecords = index.tagLocation(writeRecords, context, hoodieTable).collect();
     assertEquals(numRecords, taggedRecords.stream().filter(HoodieRecord::isCurrentLocationKnown).count());
     assertEquals(numRecords, taggedRecords.stream().map(record -> record.getKey().getRecordKey()).distinct().count());
     assertEquals(numRecords, taggedRecords.stream().filter(record -> (record.getCurrentLocation() != null
@@ -209,8 +210,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   public void testSimpleTagLocationAndUpdateWithRollback() throws Exception {
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
-    HoodieWriteClient writeClient = getHoodieWriteClient(config);
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
 
     final String newCommitTime = writeClient.startCommit();
     final int numRecords = 10;
@@ -224,9 +225,9 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // commit this upsert
     writeClient.commit(newCommitTime, writeStatues);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     // Now tagLocation for these records, hbaseIndex should tag them
-    List<HoodieRecord> records2 = index.tagLocation(writeRecords, jsc(), hoodieTable).collect();
+    List<HoodieRecord> records2 = index.tagLocation(writeRecords, context, hoodieTable).collect();
     assertEquals(numRecords, records2.stream().filter(HoodieRecord::isCurrentLocationKnown).count());
 
     // check tagged records are tagged with correct fileIds
@@ -239,10 +240,10 @@ public class TestHBaseIndex extends FunctionalTestHarness {
     // Rollback the last commit
     writeClient.rollback(newCommitTime);
 
-    hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     // Now tagLocation for these records, hbaseIndex should not tag them since it was a rolled
     // back commit
-    List<HoodieRecord> records3 = index.tagLocation(writeRecords, jsc(), hoodieTable).collect();
+    List<HoodieRecord> records3 = index.tagLocation(writeRecords, context, hoodieTable).collect();
     assertEquals(0, records3.stream().filter(HoodieRecord::isCurrentLocationKnown).count());
     assertEquals(0, records3.stream().filter(record -> record.getCurrentLocation() != null).count());
   }
@@ -250,7 +251,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testTotalGetsBatching() throws Exception {
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
 
     // Mock hbaseConnection and related entities
     Connection hbaseConnection = mock(Connection.class);
@@ -261,21 +262,21 @@ public class TestHBaseIndex extends FunctionalTestHarness {
     // only for test, set the hbaseConnection to mocked object
     index.setHbaseConnection(hbaseConnection);
 
-    HoodieWriteClient writeClient = getHoodieWriteClient(config);
+    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
 
     // start a commit and generate test data
     String newCommitTime = writeClient.startCommit();
     List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 250);
     JavaRDD<HoodieRecord> writeRecords = jsc().parallelize(records, 1);
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
     // Insert 250 records
     JavaRDD<WriteStatus> writeStatues = writeClient.upsert(writeRecords, newCommitTime);
     assertNoWriteErrors(writeStatues.collect());
 
     // Now tagLocation for these records, hbaseIndex should tag them
-    index.tagLocation(writeRecords, jsc(), hoodieTable);
+    index.tagLocation(writeRecords, context, hoodieTable);
 
     // 3 batches should be executed given batchSize = 100 and parallelism = 1
     verify(table, times(3)).get((List<Get>) any());
@@ -285,15 +286,15 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testTotalPutsBatching() throws Exception {
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
-    HoodieWriteClient writeClient = getHoodieWriteClient(config);
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
 
     // start a commit and generate test data
     String newCommitTime = writeClient.startCommit();
     List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 250);
     JavaRDD<HoodieRecord> writeRecords = jsc().parallelize(records, 1);
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
     // Insert 200 records
     JavaRDD<WriteStatus> writeStatues = writeClient.upsert(writeRecords, newCommitTime);
@@ -313,7 +314,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
     // Get all the files generated
     int numberOfDataFileIds = (int) writeStatues.map(status -> status.getFileId()).distinct().count();
 
-    index.updateLocation(writeStatues, jsc(), hoodieTable);
+    index.updateLocation(writeStatues, context, hoodieTable);
     // 3 batches should be executed given batchSize = 100 and <=numberOfDataFileIds getting updated,
     // so each fileId ideally gets updates
     verify(table, atMost(numberOfDataFileIds)).put((List<Put>) any());
@@ -322,7 +323,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testsHBasePutAccessParallelism() {
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
     final JavaRDD<WriteStatus> writeStatusRDD = jsc().parallelize(
         Arrays.asList(getSampleWriteStatus(1, 2), getSampleWriteStatus(0, 3), getSampleWriteStatus(10, 0)), 10);
     final Tuple2<Long, Integer> tuple = index.getHBasePutAccessParallelism(writeStatusRDD);
@@ -336,7 +337,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testsHBasePutAccessParallelismWithNoInserts() {
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
     final JavaRDD<WriteStatus> writeStatusRDD =
         jsc().parallelize(Arrays.asList(getSampleWriteStatus(0, 2), getSampleWriteStatus(0, 1)), 10);
     final Tuple2<Long, Integer> tuple = index.getHBasePutAccessParallelism(writeStatusRDD);
@@ -356,13 +357,13 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig(2);
-    HBaseIndex index = new HBaseIndex(config);
-    try (HoodieWriteClient writeClient = getHoodieWriteClient(config);) {
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
       metaClient = HoodieTableMetaClient.reload(metaClient);
-      HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+      HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
       // Test tagLocation without any entries in index
-      JavaRDD<HoodieRecord> records1 = index.tagLocation(writeRecords, jsc(), hoodieTable);
+      JavaRDD<HoodieRecord> records1 = index.tagLocation(writeRecords, context, hoodieTable);
       assertEquals(0, records1.filter(record -> record.isCurrentLocationKnown()).count());
       // Insert 200 records
       writeClient.startCommitWithTime(newCommitTime);
@@ -371,15 +372,15 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
       // Now tagLocation for these records, hbaseIndex should not tag them since it was a failed
       // commit
-      JavaRDD<HoodieRecord> records2 = index.tagLocation(writeRecords, jsc(), hoodieTable);
+      JavaRDD<HoodieRecord> records2 = index.tagLocation(writeRecords, context, hoodieTable);
       assertEquals(0, records2.filter(record -> record.isCurrentLocationKnown()).count());
 
       // Now commit this & update location of records inserted and validate no errors
       writeClient.commit(newCommitTime, writeStatues);
       // Now tagLocation for these records, hbaseIndex should tag them correctly
       metaClient = HoodieTableMetaClient.reload(metaClient);
-      hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
-      List<HoodieRecord> records3 = index.tagLocation(writeRecords, jsc(), hoodieTable).collect();
+      hoodieTable = HoodieSparkTable.create(config, context, metaClient);
+      List<HoodieRecord> records3 = index.tagLocation(writeRecords, context, hoodieTable).collect();
       assertEquals(numRecords, records3.stream().filter(record -> record.isCurrentLocationKnown()).count());
       assertEquals(numRecords, records3.stream().map(record -> record.getKey().getRecordKey()).distinct().count());
       assertEquals(numRecords, records3.stream().filter(record -> (record.getCurrentLocation() != null
@@ -396,13 +397,13 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HBaseIndex index = new HBaseIndex(config);
-    try (HoodieWriteClient writeClient = getHoodieWriteClient(config);) {
+    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
       metaClient = HoodieTableMetaClient.reload(metaClient);
-      HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+      HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
       // Test tagLocation without any entries in index
-      JavaRDD<HoodieRecord> records1 = index.tagLocation(writeRecords, jsc(), hoodieTable);
+      JavaRDD<HoodieRecord> records1 = index.tagLocation(writeRecords, context, hoodieTable);
       assertEquals(0, records1.filter(record -> record.isCurrentLocationKnown()).count());
 
       // Insert records
@@ -413,8 +414,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
       // Now tagLocation for these records, hbaseIndex should tag them correctly
       metaClient = HoodieTableMetaClient.reload(metaClient);
-      hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
-      List<HoodieRecord> records2 = index.tagLocation(writeRecords, jsc(), hoodieTable).collect();
+      hoodieTable = HoodieSparkTable.create(config, context, metaClient);
+      List<HoodieRecord> records2 = index.tagLocation(writeRecords, context, hoodieTable).collect();
       assertEquals(numRecords, records2.stream().filter(record -> record.isCurrentLocationKnown()).count());
       assertEquals(numRecords, records2.stream().map(record -> record.getKey().getRecordKey()).distinct().count());
       assertEquals(numRecords, records2.stream().filter(record -> (record.getCurrentLocation() != null
@@ -429,12 +430,12 @@ public class TestHBaseIndex extends FunctionalTestHarness {
         newWriteStatus.setStat(new HoodieWriteStat());
         return newWriteStatus;
       });
-      JavaRDD<WriteStatus> deleteStatus = index.updateLocation(deleteWriteStatues, jsc(), hoodieTable);
+      JavaRDD<WriteStatus> deleteStatus = index.updateLocation(deleteWriteStatues, context, hoodieTable);
       assertEquals(deleteStatus.count(), deleteWriteStatues.count());
       assertNoWriteErrors(deleteStatus.collect());
 
       // Ensure no records can be tagged
-      List<HoodieRecord> records3 = index.tagLocation(writeRecords, jsc(), hoodieTable).collect();
+      List<HoodieRecord> records3 = index.tagLocation(writeRecords, context, hoodieTable).collect();
       assertEquals(0, records3.stream().filter(record -> record.isCurrentLocationKnown()).count());
       assertEquals(numRecords, records3.stream().map(record -> record.getKey().getRecordKey()).distinct().count());
       assertEquals(0, records3.stream().filter(record -> (record.getCurrentLocation() != null

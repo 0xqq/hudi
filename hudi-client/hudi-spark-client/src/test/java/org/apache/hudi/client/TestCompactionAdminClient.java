@@ -18,7 +18,7 @@
 
 package org.apache.hudi.client;
 
-import org.apache.hudi.client.CompactionAdminClient.ValidationOpResult;
+import org.apache.hudi.client.BaseCompactionAdminClient.ValidationOpResult;
 import org.apache.hudi.common.model.CompactionOperation;
 import org.apache.hudi.common.model.FileSlice;
 import org.apache.hudi.common.model.HoodieFileGroup;
@@ -48,8 +48,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.apache.hudi.client.CompactionAdminClient.getRenamingActionsToAlignWithCompactionOperation;
-import static org.apache.hudi.client.CompactionAdminClient.renameLogFile;
+import static org.apache.hudi.client.HoodieSparkCompactionAdminClient.getRenamingActionsToAlignWithCompactionOperation;
+import static org.apache.hudi.client.HoodieSparkCompactionAdminClient.renameLogFile;
 import static org.apache.hudi.common.model.HoodieTableType.MERGE_ON_READ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -60,14 +60,14 @@ public class TestCompactionAdminClient extends HoodieClientTestBase {
   private static final Logger LOG = LogManager.getLogger(TestCompactionAdminClient.class);
 
   private HoodieTableMetaClient metaClient;
-  private CompactionAdminClient client;
+  private HoodieSparkCompactionAdminClient client;
 
   @BeforeEach
   public void setUp() throws Exception {
     initPath();
     initSparkContexts();
     metaClient = HoodieTestUtils.init(HoodieTestUtils.getDefaultHadoopConf(), basePath, MERGE_ON_READ);
-    client = new CompactionAdminClient(jsc, basePath);
+    client = new HoodieSparkCompactionAdminClient(context, basePath);
   }
 
   @Test
@@ -210,7 +210,7 @@ public class TestCompactionAdminClient extends HoodieClientTestBase {
   /**
    * Validate Unschedule operations.
    */
-  private List<Pair<HoodieLogFile, HoodieLogFile>> validateUnSchedulePlan(CompactionAdminClient client,
+  private List<Pair<HoodieLogFile, HoodieLogFile>> validateUnSchedulePlan(HoodieSparkCompactionAdminClient client,
       String ingestionInstant, String compactionInstant, int numEntriesPerInstant, int expNumRenames) throws Exception {
     return validateUnSchedulePlan(client, ingestionInstant, compactionInstant, numEntriesPerInstant, expNumRenames,
         false);
@@ -219,7 +219,7 @@ public class TestCompactionAdminClient extends HoodieClientTestBase {
   /**
    * Validate Unschedule operations.
    */
-  private List<Pair<HoodieLogFile, HoodieLogFile>> validateUnSchedulePlan(CompactionAdminClient client,
+  private List<Pair<HoodieLogFile, HoodieLogFile>> validateUnSchedulePlan(HoodieSparkCompactionAdminClient client,
       String ingestionInstant, String compactionInstant, int numEntriesPerInstant, int expNumRenames,
       boolean skipUnSchedule) throws Exception {
 
@@ -292,7 +292,7 @@ public class TestCompactionAdminClient extends HoodieClientTestBase {
   /**
    * Validate Unschedule operations.
    */
-  private void validateUnScheduleFileId(CompactionAdminClient client, String ingestionInstant, String compactionInstant,
+  private void validateUnScheduleFileId(HoodieSparkCompactionAdminClient client, String ingestionInstant, String compactionInstant,
       CompactionOperation op, int expNumRenames) throws Exception {
 
     ensureValidCompactionPlan(compactionInstant);

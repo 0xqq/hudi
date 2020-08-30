@@ -18,9 +18,10 @@
 
 package org.apache.hudi.io.storage;
 
+import org.apache.hudi.client.SparkTaskContextSupplier;
 import org.apache.hudi.common.testutils.HoodieTestDataGenerator;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.table.HoodieTable;
+import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.testutils.HoodieClientTestBase;
 
 import org.apache.avro.generic.IndexedRecord;
@@ -43,7 +44,7 @@ public class TestHoodieFileWriterFactory extends HoodieClientTestBase {
     final String instantTime = "100";
     final Path parquetPath = new Path(basePath + "/partition/path/f1_1-0-1_000.parquet");
     final HoodieWriteConfig cfg = getConfig();
-    HoodieTable table = HoodieTable.create(metaClient, cfg, hadoopConf);
+    HoodieSparkTable table = HoodieSparkTable.create(cfg, context, metaClient);
     SparkTaskContextSupplier supplier = new SparkTaskContextSupplier();
     HoodieFileWriter<IndexedRecord> parquetWriter = HoodieFileWriterFactory.getFileWriter(instantTime,
         parquetPath, table, cfg, HoodieTestDataGenerator.AVRO_SCHEMA, supplier);

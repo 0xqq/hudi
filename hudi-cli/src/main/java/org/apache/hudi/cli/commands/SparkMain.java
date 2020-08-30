@@ -21,6 +21,8 @@ package org.apache.hudi.cli.commands;
 import org.apache.hudi.DataSourceWriteOptions;
 import org.apache.hudi.cli.DedupeSparkJob;
 import org.apache.hudi.cli.utils.SparkUtil;
+import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.config.TypedProperties;
 import org.apache.hudi.client.utils.ClientUtils;
 import org.apache.hudi.common.fs.FSUtils;
@@ -33,8 +35,8 @@ import org.apache.hudi.config.HoodieIndexConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieSavepointException;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.table.upgrade.BaseUpgradeDowngrade;
 import org.apache.hudi.table.action.compact.strategy.UnBoundedCompactionStrategy;
+import org.apache.hudi.table.upgrade.SparkUpgradeDowngrade;
 import org.apache.hudi.utilities.HDFSParquetImporter;
 import org.apache.hudi.utilities.HDFSParquetImporter.Config;
 import org.apache.hudi.utilities.HoodieCleaner;
@@ -341,7 +343,7 @@ public class SparkMain {
   }
 
   private static int rollback(JavaSparkContext jsc, String instantTime, String basePath) throws Exception {
-    HoodieWriteClient client = createHoodieClient(jsc, basePath);
+    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
     if (client.rollback(instantTime)) {
       LOG.info(String.format("The commit \"%s\" rolled back.", instantTime));
       return 0;
@@ -353,7 +355,7 @@ public class SparkMain {
 
   private static int createSavepoint(JavaSparkContext jsc, String commitTime, String user,
       String comments, String basePath) throws Exception {
-    HoodieWriteClient client = createHoodieClient(jsc, basePath);
+    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
     try {
       client.savepoint(commitTime, user, comments);
       LOG.info(String.format("The commit \"%s\" has been savepointed.", commitTime));
@@ -365,7 +367,7 @@ public class SparkMain {
   }
 
   private static int rollbackToSavepoint(JavaSparkContext jsc, String savepointTime, String basePath) throws Exception {
-    HoodieWriteClient client = createHoodieClient(jsc, basePath);
+    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
     try {
       client.restoreToSavepoint(savepointTime);
       LOG.info(String.format("The commit \"%s\" rolled back.", savepointTime));
@@ -377,7 +379,7 @@ public class SparkMain {
   }
 
   private static int deleteSavepoint(JavaSparkContext jsc, String savepointTime, String basePath) throws Exception {
-    HoodieWriteClient client = createHoodieClient(jsc, basePath);
+    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
     try {
       client.deleteSavepoint(savepointTime);
       LOG.info(String.format("Savepoint \"%s\" deleted.", savepointTime));
@@ -401,7 +403,8 @@ public class SparkMain {
     HoodieWriteConfig config = getWriteConfig(basePath);
     HoodieTableMetaClient metaClient = ClientUtils.createMetaClient(jsc.hadoopConfiguration(), config, false);
     try {
-      BaseUpgradeDowngrade.run(metaClient, HoodieTableVersion.valueOf(toVersion), config, jsc, null);
+      HoodieSparkEngineContext context = new HoodieSparkEngineContext(jsc);
+      new SparkUpgradeDowngrade(metaClient, config, context).run(metaClient, HoodieTableVersion.valueOf(toVersion), config, context, null);
       LOG.info(String.format("Table at \"%s\" upgraded / downgraded to version \"%s\".", basePath, toVersion));
       return 0;
     } catch (Exception e) {
@@ -410,9 +413,9 @@ public class SparkMain {
     }
   }
 
-  private static HoodieWriteClient createHoodieClient(JavaSparkContext jsc, String basePath) throws Exception {
+  private static HoodieSparkWriteClient createHoodieClient(JavaSparkContext jsc, String basePath) throws Exception {
     HoodieWriteConfig config = getWriteConfig(basePath);
-    return new HoodieWriteClient(jsc, config);
+    return new HoodieSparkWriteClient(new HoodieSparkEngineContext(jsc), config);
   }
 
   private static HoodieWriteConfig getWriteConfig(String basePath) {

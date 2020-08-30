@@ -250,7 +250,7 @@ public class TestBootstrap extends HoodieClientTestBase {
             .withBootstrapParallelism(3)
             .withBootstrapModeSelector(bootstrapModeSelectorClass).build())
         .build();
-    HoodieWriteClient client = new HoodieWriteClient(jsc, config);
+    HoodieSparkWriteClient client = new HoodieSparkWriteClient(context, config);
     client.bootstrap(Option.empty());
     checkBootstrapResults(totalRecords, schema, bootstrapCommitInstantTs, checkNumRawFiles, numInstantsAfterBootstrap,
         numInstantsAfterBootstrap, timestamp, timestamp, deltaCommit, bootstrapInstants);
@@ -268,7 +268,7 @@ public class TestBootstrap extends HoodieClientTestBase {
     assertFalse(index.useIndex());
 
     // Run bootstrap again
-    client = new HoodieWriteClient(jsc, config);
+    client = new HoodieSparkWriteClient(context, config);
     client.bootstrap(Option.empty());
 
     metaClient.reloadActiveTimeline();

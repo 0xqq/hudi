@@ -44,7 +44,6 @@ import org.apache.hudi.index.HoodieIndex;
 import org.apache.hudi.index.HoodieIndex.IndexType;
 import org.apache.hudi.index.HoodieSparkIndexFactory;
 import org.apache.hudi.table.HoodieSparkTable;
-import org.apache.hudi.table.HoodieTable;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -140,7 +139,7 @@ public class HoodieClientTestBase extends HoodieClientTestHarness {
             .withStorageType(FileSystemViewStorageType.EMBEDDED_KV_STORE).build());
   }
 
-  public HoodieTable getHoodieTable(HoodieTableMetaClient metaClient, HoodieWriteConfig config) {
+  public HoodieSparkTable getHoodieTable(HoodieTableMetaClient metaClient, HoodieWriteConfig config) {
     HoodieSparkTable table = HoodieSparkTable.create(config, context, metaClient);
     ((SyncableFileSystemView) (table.getSliceView())).reset();
     return table;

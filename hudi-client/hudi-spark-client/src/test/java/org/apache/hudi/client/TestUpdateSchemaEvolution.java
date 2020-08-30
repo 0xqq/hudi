@@ -30,7 +30,6 @@ import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.io.HoodieSparkCreateHandle;
 import org.apache.hudi.io.HoodieSparkMergeHandle;
 import org.apache.hudi.table.HoodieSparkTable;
-import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.testutils.HoodieClientTestHarness;
 
 import org.apache.avro.Schema;

@@ -33,6 +33,7 @@ import org.apache.hudi.common.model.WriteOperationType;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.HoodieTableVersion;
 import org.apache.hudi.common.table.timeline.HoodieActiveTimeline;
+import org.apache.hudi.common.table.timeline.HoodieInstant;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.common.util.collection.Pair;
@@ -42,10 +43,14 @@ import org.apache.hudi.exception.HoodieCommitException;
 import org.apache.hudi.exception.HoodieIOException;
 import org.apache.hudi.index.HoodieIndex;
 import org.apache.hudi.index.HoodieSparkIndexFactory;
-import org.apache.hudi.table.*;
+import org.apache.hudi.table.BaseHoodieTimelineArchiveLog;
+import org.apache.hudi.table.BulkInsertPartitioner;
+import org.apache.hudi.table.HoodieSparkTable;
+import org.apache.hudi.table.HoodieSparkTimelineArchiveLog;
+import org.apache.hudi.table.HoodieTable;
+import org.apache.hudi.table.SparkMarkerFiles;
 import org.apache.hudi.table.action.HoodieWriteMetadata;
 import org.apache.hudi.table.action.compact.SparkCompactHelpers;
-import org.apache.hudi.table.upgrade.BaseUpgradeDowngrade;
 import org.apache.hudi.table.upgrade.SparkUpgradeDowngrade;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -277,7 +282,20 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   protected JavaRDD<WriteStatus> compact(String compactionInstantTime, boolean shouldComplete) {
-    return null;
+    HoodieSparkTable table = HoodieSparkTable.create(config, context);
+    HoodieTimeline pendingCompactionTimeline = table.getActiveTimeline().filterPendingCompactionTimeline();
+    HoodieInstant inflightInstant = HoodieTimeline.getCompactionInflightInstant(compactionInstantTime);
+    if (pendingCompactionTimeline.containsInstant(inflightInstant)) {
+      rollbackInflightCompaction(inflightInstant, table);
+      table.getMetaClient().reloadActiveTimeline();
+    }
+    compactionTimer = metrics.getCompactionCtx();
+    HoodieWriteMetadata compactionMetadata = table.compact(context, compactionInstantTime);
+    JavaRDD<WriteStatus> statuses = (JavaRDD<WriteStatus>) compactionMetadata.getWriteStatuses();
+    if (shouldComplete && compactionMetadata.getCommitMetadata().isPresent()) {
+      completeCompaction((HoodieCommitMetadata) compactionMetadata.getCommitMetadata().get(), statuses, table, compactionInstantTime);
+    }
+    return statuses;
   }
 
   @Override

@@ -27,7 +27,9 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.client.HoodieReadClient;
+import org.apache.hudi.client.HoodieSparkWriteClient;
 import org.apache.hudi.client.WriteStatus;
+import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.table.timeline.HoodieActiveTimeline;
 import org.apache.hudi.common.util.Option;
@@ -49,12 +51,12 @@ import org.apache.spark.api.java.JavaSparkContext;
 /**
  * A writer abstraction for the Hudi test suite. This class wraps different implementations of writers used to perform
  * write operations into the target hudi dataset. Current supported writers are {@link HoodieDeltaStreamerWrapper}
- * and {@link HoodieWriteClient}.
+ * and {@link HoodieSparkWriteClient}.
  */
 public class HoodieTestSuiteWriter {
 
   private HoodieDeltaStreamerWrapper deltaStreamerWrapper;
-  private HoodieWriteClient writeClient;
+  private HoodieSparkWriteClient writeClient;
   protected HoodieTestSuiteConfig cfg;
   private Option<String> lastCheckpoint;
   private HoodieReadClient hoodieReadClient;
@@ -75,10 +77,11 @@ public class HoodieTestSuiteWriter {
     // We ensure that only 1 instance of HoodieWriteClient is instantiated for a HoodieTestSuiteWriter
     // This does not instantiate a HoodieWriteClient until a
     // {@link HoodieDeltaStreamer#commit(HoodieWriteClient, JavaRDD, Option)} is invoked.
+    HoodieSparkEngineContext context = new HoodieSparkEngineContext(jsc);
     this.deltaStreamerWrapper = new HoodieDeltaStreamerWrapper(cfg, jsc);
-    this.hoodieReadClient = new HoodieReadClient(jsc, cfg.targetBasePath);
+    this.hoodieReadClient = new HoodieReadClient(context, cfg.targetBasePath);
     if (!cfg.useDeltaStreamer) {
-      this.writeClient = new HoodieWriteClient(jsc, getHoodieClientConfig(cfg, props, schema), rollbackInflight);
+      this.writeClient = new HoodieSparkWriteClient(context, getHoodieClientConfig(cfg, props, schema), rollbackInflight);
     }
     this.cfg = cfg;
     this.configuration = jsc.hadoopConfiguration();
@@ -161,7 +164,7 @@ public class HoodieTestSuiteWriter {
         }
       }
       if (instantTime.isPresent()) {
-        return writeClient.compact(instantTime.get());
+        return (JavaRDD<WriteStatus>) writeClient.compact(instantTime.get());
       } else {
         return null;
       }
@@ -188,13 +191,13 @@ public class HoodieTestSuiteWriter {
     }
   }
 
-  public HoodieWriteClient getWriteClient(DagNode dagNode) throws IllegalAccessException {
+  public HoodieSparkWriteClient getWriteClient(DagNode dagNode) throws IllegalAccessException {
     if (cfg.useDeltaStreamer & !allowWriteClientAccess(dagNode)) {
       throw new IllegalAccessException("cannot access write client when testing in deltastreamer mode");
     }
     synchronized (this) {
       if (writeClient == null) {
-        this.writeClient = new HoodieWriteClient(this.sparkContext, getHoodieClientConfig(cfg, props, schema), false);
+        this.writeClient = new HoodieSparkWriteClient(new HoodieSparkEngineContext(this.sparkContext), getHoodieClientConfig(cfg, props, schema), false);
       }
     }
     return writeClient;

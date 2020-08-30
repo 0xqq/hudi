@@ -28,8 +28,8 @@ import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.common.testutils.HoodieTestDataGenerator;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.table.HoodieTable;
-import org.apache.hudi.table.MarkerFiles;
 
+import org.apache.hudi.table.SparkMarkerFiles;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,8 +88,8 @@ public class TestMergeOnReadRollbackActionExecutor extends HoodieClientRollbackT
 
     //2. rollback
     HoodieInstant rollBackInstant = new HoodieInstant(isUsingMarkers, HoodieTimeline.DELTA_COMMIT_ACTION, "002");
-    MergeOnReadRollbackActionExecutor mergeOnReadRollbackActionExecutor = new MergeOnReadRollbackActionExecutor(
-        jsc,
+    SparkMergeOnReadRollbackActionExecutor mergeOnReadRollbackActionExecutor = new SparkMergeOnReadRollbackActionExecutor(
+        context,
         cfg,
         table,
         "003",
@@ -97,9 +97,9 @@ public class TestMergeOnReadRollbackActionExecutor extends HoodieClientRollbackT
         true);
     // assert is filelist mode
     if (!isUsingMarkers) {
-      assertFalse(mergeOnReadRollbackActionExecutor.getRollbackStrategy() instanceof MarkerBasedRollbackStrategy);
+      assertFalse(mergeOnReadRollbackActionExecutor.getRollbackStrategy() instanceof SparkMarkerBasedRollbackStrategy);
     } else {
-      assertTrue(mergeOnReadRollbackActionExecutor.getRollbackStrategy() instanceof MarkerBasedRollbackStrategy);
+      assertTrue(mergeOnReadRollbackActionExecutor.getRollbackStrategy() instanceof SparkMarkerBasedRollbackStrategy);
     }
 
     //3. assert the rollback stat
@@ -137,15 +137,15 @@ public class TestMergeOnReadRollbackActionExecutor extends HoodieClientRollbackT
     secondPartitionRollBackLogFiles.removeAll(secondPartitionCommit2LogFiles);
     assertEquals(1, secondPartitionRollBackLogFiles.size());
 
-    assertFalse(new MarkerFiles(table, "002").doesMarkerDirExist());
+    assertFalse(new SparkMarkerFiles(table, "002").doesMarkerDirExist());
   }
 
   @Test
   public void testFailForCompletedInstants() {
     Assertions.assertThrows(IllegalArgumentException.class, () -> {
       HoodieInstant rollBackInstant = new HoodieInstant(false, HoodieTimeline.DELTA_COMMIT_ACTION, "002");
-      new MergeOnReadRollbackActionExecutor(
-              jsc,
+      new SparkMergeOnReadRollbackActionExecutor(
+              context,
               getConfigBuilder().build(),
               getHoodieTable(metaClient, getConfigBuilder().build()),
               "003",

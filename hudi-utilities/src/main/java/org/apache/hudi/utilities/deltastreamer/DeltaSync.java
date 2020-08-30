@@ -386,13 +386,13 @@ public class DeltaSync implements Serializable {
     JavaRDD<WriteStatus> writeStatusRDD;
     switch (cfg.operation) {
       case INSERT:
-        writeStatusRDD = (JavaRDD<WriteStatus>) writeClient.insert(records, instantTime);
+        writeStatusRDD = writeClient.insert(records, instantTime);
         break;
       case UPSERT:
-        writeStatusRDD = (JavaRDD<WriteStatus>) writeClient.upsert(records, instantTime);
+        writeStatusRDD = writeClient.upsert(records, instantTime);
         break;
       case BULK_INSERT:
-        writeStatusRDD = (JavaRDD<WriteStatus>) writeClient.bulkInsert(records, instantTime);
+        writeStatusRDD = writeClient.bulkInsert(records, instantTime);
         break;
       default:
         throw new HoodieDeltaStreamerException("Unknown operation : " + cfg.operation);

@@ -241,7 +241,7 @@ public class HoodieSparkHBaseIndex<T extends HoodieRecordPayload> extends BaseHo
     }
   }
 
-  private Tuple2<Long, Integer> getHBasePutAccessParallelism(final JavaRDD<WriteStatus> writeStatusRDD) {
+  protected Tuple2<Long, Integer> getHBasePutAccessParallelism(final JavaRDD<WriteStatus> writeStatusRDD) {
     final JavaPairRDD<Long, Integer> insertOnlyWriteStatusRDD = writeStatusRDD
         .filter(w -> w.getStat().getNumInserts() > 0).mapToPair(w -> new Tuple2<>(w.getStat().getNumInserts(), 1));
     return insertOnlyWriteStatusRDD.fold(new Tuple2<>(0L, 0), (w, c) -> new Tuple2<>(w._1 + c._1, w._2 + c._2));

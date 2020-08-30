@@ -80,7 +80,7 @@ public class TestBulkInsertInternalPartitioner extends HoodieClientTestBase {
                                                  boolean isGloballySorted, boolean isLocallySorted,
                                                  Map<String, Long> expectedPartitionNumRecords) {
     int numPartitions = 2;
-    JavaRDD<HoodieRecord> actualRecords = partitioner.repartitionRecords(records, numPartitions);
+    JavaRDD<HoodieRecord> actualRecords = (JavaRDD<HoodieRecord>) partitioner.repartitionRecords(records, numPartitions);
     assertEquals(numPartitions, actualRecords.getNumPartitions());
     List<HoodieRecord> collectedActualRecords = actualRecords.collect();
     if (isGloballySorted) {

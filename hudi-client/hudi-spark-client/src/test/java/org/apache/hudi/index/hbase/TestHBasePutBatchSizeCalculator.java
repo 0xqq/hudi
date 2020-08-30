@@ -19,7 +19,7 @@
 
 package org.apache.hudi.index.hbase;
 
-import org.apache.hudi.index.hbase.HBaseIndex.HBasePutBatchSizeCalculator;
+import org.apache.hudi.index.hbase.BaseHoodieHBaseIndex.HBasePutBatchSizeCalculator;
 
 import org.junit.jupiter.api.Test;
 

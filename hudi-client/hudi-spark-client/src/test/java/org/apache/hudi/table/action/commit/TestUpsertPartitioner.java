@@ -31,8 +31,9 @@ import org.apache.hudi.common.util.Option;
 import org.apache.hudi.config.HoodieCompactionConfig;
 import org.apache.hudi.config.HoodieStorageConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.table.HoodieTable;
-import org.apache.hudi.table.WorkloadProfile;
+import org.apache.hudi.table.HoodieSparkCopyOnWriteTable;
+import org.apache.hudi.table.HoodieSparkTable;
+import org.apache.hudi.table.SparkWorkloadProfile;
 import org.apache.hudi.testutils.HoodieClientTestBase;
 
 import org.apache.avro.Schema;
@@ -76,7 +77,7 @@ public class TestUpsertPartitioner extends HoodieClientTestBase {
     FileCreateUtils.createCommit(basePath, "001");
     FileCreateUtils.createBaseFile(basePath, testPartitionPath, "001", "file1", fileSize);
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    HoodieCopyOnWriteTable table = (HoodieCopyOnWriteTable) HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkCopyOnWriteTable table = (HoodieSparkCopyOnWriteTable) HoodieSparkTable.create(config, context, metaClient);
 
     HoodieTestDataGenerator dataGenerator = new HoodieTestDataGenerator(new String[] {testPartitionPath});
     List<HoodieRecord> insertRecords = dataGenerator.generateInserts("001", numInserts);
@@ -89,8 +90,8 @@ public class TestUpsertPartitioner extends HoodieClientTestBase {
     List<HoodieRecord> records = new ArrayList<>();
     records.addAll(insertRecords);
     records.addAll(updateRecords);
-    WorkloadProfile profile = new WorkloadProfile(jsc.parallelize(records));
-    UpsertPartitioner partitioner = new UpsertPartitioner(profile, jsc, table, config);
+    SparkWorkloadProfile profile = new SparkWorkloadProfile(jsc.parallelize(records));
+    UpsertPartitioner partitioner = new UpsertPartitioner(profile, context, table, config);
     assertEquals(0, partitioner.getPartition(
         new Tuple2<>(updateRecords.get(0).getKey(), Option.ofNullable(updateRecords.get(0).getCurrentLocation()))),
         "Update record should have gone to the 1 update partition");
@@ -195,12 +196,12 @@ public class TestUpsertPartitioner extends HoodieClientTestBase {
 
     FileCreateUtils.createCommit(basePath, "001");
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    HoodieCopyOnWriteTable table = (HoodieCopyOnWriteTable) HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkCopyOnWriteTable table = (HoodieSparkCopyOnWriteTable) HoodieSparkTable.create(config, context, metaClient);
     HoodieTestDataGenerator dataGenerator = new HoodieTestDataGenerator(new String[] {testPartitionPath});
     List<HoodieRecord> insertRecords = dataGenerator.generateInserts("001", totalInsertNum);
 
-    WorkloadProfile profile = new WorkloadProfile(jsc.parallelize(insertRecords));
-    UpsertPartitioner partitioner = new UpsertPartitioner(profile, jsc, table, config);
+    SparkWorkloadProfile profile = new SparkWorkloadProfile(jsc.parallelize(insertRecords));
+    UpsertPartitioner partitioner = new UpsertPartitioner(profile, context, table, config);
     List<InsertBucketCumulativeWeightPair> insertBuckets = partitioner.getInsertBuckets(testPartitionPath);
 
     float bucket0Weight = 0.2f;

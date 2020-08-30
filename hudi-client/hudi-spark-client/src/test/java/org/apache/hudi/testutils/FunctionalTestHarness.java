@@ -20,12 +20,14 @@
 package org.apache.hudi.testutils;
 
 import org.apache.hudi.client.HoodieReadClient;
+import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.common.HoodieEngineContext;
+import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieAvroPayload;
 import org.apache.hudi.common.table.HoodieTableConfig;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.testutils.minicluster.HdfsTestService;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.index.HoodieIndex;
 import org.apache.hudi.testutils.providers.DFSProvider;
 import org.apache.hudi.testutils.providers.HoodieMetaClientProvider;
 import org.apache.hudi.testutils.providers.HoodieWriteClientProvider;
@@ -57,6 +59,7 @@ public class FunctionalTestHarness implements SparkProvider, DFSProvider, Hoodie
   private static transient SparkSession spark;
   private static transient SQLContext sqlContext;
   private static transient JavaSparkContext jsc;
+  protected static transient HoodieSparkEngineContext context;
 
   private static transient HdfsTestService hdfsTestService;
   private static transient MiniDFSCluster dfsCluster;
@@ -117,8 +120,8 @@ public class FunctionalTestHarness implements SparkProvider, DFSProvider, Hoodie
   }
 
   @Override
-  public HoodieWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) throws IOException {
-    return new HoodieWriteClient(jsc, cfg, false, HoodieIndex.createIndex(cfg));
+  public HoodieSparkWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) throws IOException {
+    return new HoodieSparkWriteClient(context(), cfg, false);
   }
 
   @BeforeEach
@@ -126,11 +129,12 @@ public class FunctionalTestHarness implements SparkProvider, DFSProvider, Hoodie
     initialized = spark != null && hdfsTestService != null;
     if (!initialized) {
       SparkConf sparkConf = conf();
-      HoodieWriteClient.registerClasses(sparkConf);
+      HoodieSparkWriteClient.registerClasses(sparkConf);
       HoodieReadClient.addHoodieSupport(sparkConf);
       spark = SparkSession.builder().config(sparkConf).getOrCreate();
       sqlContext = spark.sqlContext();
       jsc = new JavaSparkContext(spark.sparkContext());
+      context = new HoodieSparkEngineContext(jsc);
 
       hdfsTestService = new HdfsTestService();
       dfsCluster = hdfsTestService.start(true);
@@ -155,5 +159,10 @@ public class FunctionalTestHarness implements SparkProvider, DFSProvider, Hoodie
     for (FileStatus f : fileStatuses) {
       fs.delete(f.getPath(), true);
     }
+  }
+
+  @Override
+  public HoodieEngineContext context() {
+    return context;
   }
 }

@@ -24,6 +24,7 @@ import org.apache.hudi.avro.model.HoodieCleanPartitionMetadata;
 import org.apache.hudi.avro.model.HoodieCleanerPlan;
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.avro.model.HoodieFileStatus;
+import org.apache.hudi.client.HoodieSparkWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieCleanStat;
 import org.apache.hudi.common.bootstrap.TestBootstrapIndex;
@@ -62,6 +63,7 @@ import org.apache.hudi.config.HoodieCompactionConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieIOException;
 import org.apache.hudi.index.HoodieIndex;
+import org.apache.hudi.index.HoodieSparkIndexFactory;
 import org.apache.hudi.table.action.clean.CleanPlanner;
 import org.apache.hudi.testutils.HoodieClientTestBase;
 
@@ -120,9 +122,9 @@ public class TestCleaner extends HoodieClientTestBase {
    * @param insertFn Insertion API for testing
    * @throws Exception in case of error
    */
-  private void insertFirstBigBatchForClientCleanerTest(HoodieWriteConfig cfg, HoodieWriteClient client,
+  private void insertFirstBigBatchForClientCleanerTest(HoodieWriteConfig cfg, HoodieSparkWriteClient client,
       Function2<List<HoodieRecord>, String, Integer> recordGenFunction,
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
       HoodieCleaningPolicy cleaningPolicy) throws Exception {
 
     /*
@@ -143,14 +145,14 @@ public class TestCleaner extends HoodieClientTestBase {
     HoodieTimeline timeline = new HoodieActiveTimeline(metaClient).getCommitTimeline();
     assertEquals(1, timeline.findInstantsAfter("000", Integer.MAX_VALUE).countInstants(), "Expecting a single commit.");
     // Should have 100 records in table (check using Index), all in locations marked at commit
-    HoodieTable table = HoodieTable.create(metaClient, client.getConfig(), hadoopConf);
+    HoodieSparkTable table = HoodieSparkTable.create(client.getConfig(), context, metaClient);
 
     assertFalse(table.getCompletedCommitsTimeline().empty());
     // We no longer write empty cleaner plans when there is nothing to be cleaned.
     assertTrue(table.getCompletedCleanTimeline().empty());
 
-    HoodieIndex index = HoodieIndex.createIndex(cfg);
-    List<HoodieRecord> taggedRecords = index.tagLocation(jsc.parallelize(records, 1), jsc, table).collect();
+    HoodieIndex index = HoodieSparkIndexFactory.createIndex(cfg);
+    List<HoodieRecord> taggedRecords = ((JavaRDD<HoodieRecord>)index.tagLocation(jsc.parallelize(records, 1), context, table)).collect();
     checkTaggedRecords(taggedRecords, newCommitTime);
   }
 
@@ -159,7 +161,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertAndCleanByVersions() throws Exception {
-    testInsertAndCleanByVersions(HoodieWriteClient::insert, HoodieWriteClient::upsert, false);
+    testInsertAndCleanByVersions(HoodieSparkWriteClient::insert, HoodieSparkWriteClient::upsert, false);
   }
 
   /**
@@ -167,7 +169,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertPreppedAndCleanByVersions() throws Exception {
-    testInsertAndCleanByVersions(HoodieWriteClient::insertPreppedRecords, HoodieWriteClient::upsertPreppedRecords,
+    testInsertAndCleanByVersions(HoodieSparkWriteClient::insertPreppedRecords, HoodieSparkWriteClient::upsertPreppedRecords,
         true);
   }
 
@@ -176,7 +178,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testBulkInsertAndCleanByVersions() throws Exception {
-    testInsertAndCleanByVersions(HoodieWriteClient::bulkInsert, HoodieWriteClient::upsert, false);
+    testInsertAndCleanByVersions(HoodieSparkWriteClient::bulkInsert, HoodieSparkWriteClient::upsert, false);
   }
 
   /**
@@ -186,7 +188,7 @@ public class TestCleaner extends HoodieClientTestBase {
   public void testBulkInsertPreppedAndCleanByVersions() throws Exception {
     testInsertAndCleanByVersions(
         (client, recordRDD, instantTime) -> client.bulkInsertPreppedRecords(recordRDD, instantTime, Option.empty()),
-        HoodieWriteClient::upsertPreppedRecords, true);
+        HoodieSparkWriteClient::upsertPreppedRecords, true);
   }
 
   /**
@@ -199,8 +201,8 @@ public class TestCleaner extends HoodieClientTestBase {
    * @throws Exception in case of errors
    */
   private void testInsertAndCleanByVersions(
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
       throws Exception {
     int maxVersions = 2; // keep upto 2 versions for each file
     HoodieWriteConfig cfg = getConfigBuilder()
@@ -209,7 +211,7 @@ public class TestCleaner extends HoodieClientTestBase {
         .withParallelism(1, 1).withBulkInsertParallelism(1).withFinalizeWriteParallelism(1).withDeleteParallelism(1)
         .withConsistencyGuardConfig(ConsistencyGuardConfig.newBuilder().withConsistencyCheckEnabled(true).build())
         .build();
-    try (HoodieWriteClient client = getHoodieWriteClient(cfg);) {
+    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
 
       final Function2<List<HoodieRecord>, String, Integer> recordInsertGenWrappedFunction =
           generateWrapRecordsFn(isPreppedAPI, cfg, dataGen::generateInserts);
@@ -222,7 +224,7 @@ public class TestCleaner extends HoodieClientTestBase {
 
       Map<HoodieFileGroupId, FileSlice> compactionFileIdToLatestFileSlice = new HashMap<>();
       metaClient = HoodieTableMetaClient.reload(metaClient);
-      HoodieTable table = HoodieTable.create(metaClient, getConfig(), hadoopConf);
+      HoodieSparkTable table = HoodieSparkTable.create(getConfig(), context, metaClient);
       for (String partitionPath : dataGen.getPartitionPaths()) {
         TableFileSystemView fsView = table.getFileSystemView();
         Option<Boolean> added = Option.fromJavaOptional(fsView.getAllFileGroups(partitionPath).findFirst().map(fg -> {
@@ -259,7 +261,7 @@ public class TestCleaner extends HoodieClientTestBase {
           assertNoWriteErrors(statuses);
 
           metaClient = HoodieTableMetaClient.reload(metaClient);
-          table = HoodieTable.create(metaClient, getConfig(), hadoopConf);
+          table = HoodieSparkTable.create(getConfig(), context, metaClient);
           HoodieTimeline timeline = table.getMetaClient().getCommitsTimeline();
 
           TableFileSystemView fsView = table.getFileSystemView();
@@ -321,7 +323,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertAndCleanByCommits() throws Exception {
-    testInsertAndCleanByCommits(HoodieWriteClient::insert, HoodieWriteClient::upsert, false);
+    testInsertAndCleanByCommits(HoodieSparkWriteClient::insert, HoodieSparkWriteClient::upsert, false);
   }
 
   /**
@@ -329,7 +331,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertPreppedAndCleanByCommits() throws Exception {
-    testInsertAndCleanByCommits(HoodieWriteClient::insertPreppedRecords, HoodieWriteClient::upsertPreppedRecords, true);
+    testInsertAndCleanByCommits(HoodieSparkWriteClient::insertPreppedRecords, HoodieSparkWriteClient::upsertPreppedRecords, true);
   }
 
   /**
@@ -339,7 +341,7 @@ public class TestCleaner extends HoodieClientTestBase {
   public void testBulkInsertPreppedAndCleanByCommits() throws Exception {
     testInsertAndCleanByCommits(
         (client, recordRDD, instantTime) -> client.bulkInsertPreppedRecords(recordRDD, instantTime, Option.empty()),
-        HoodieWriteClient::upsertPreppedRecords, true);
+        HoodieSparkWriteClient::upsertPreppedRecords, true);
   }
 
   /**
@@ -347,7 +349,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testBulkInsertAndCleanByCommits() throws Exception {
-    testInsertAndCleanByCommits(HoodieWriteClient::bulkInsert, HoodieWriteClient::upsert, false);
+    testInsertAndCleanByCommits(HoodieSparkWriteClient::bulkInsert, HoodieSparkWriteClient::upsert, false);
   }
 
   /**
@@ -360,8 +362,8 @@ public class TestCleaner extends HoodieClientTestBase {
    * @throws Exception in case of errors
    */
   private void testInsertAndCleanByCommits(
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
-      Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
+      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
       throws Exception {
     int maxCommits = 3; // keep upto 3 commits from the past
     HoodieWriteConfig cfg = getConfigBuilder()
@@ -370,7 +372,7 @@ public class TestCleaner extends HoodieClientTestBase {
         .withParallelism(1, 1).withBulkInsertParallelism(1).withFinalizeWriteParallelism(1).withDeleteParallelism(1)
         .withConsistencyGuardConfig(ConsistencyGuardConfig.newBuilder().withConsistencyCheckEnabled(true).build())
         .build();
-    HoodieWriteClient client = getHoodieWriteClient(cfg);
+    HoodieSparkWriteClient client = getHoodieWriteClient(cfg);
 
     final Function2<List<HoodieRecord>, String, Integer> recordInsertGenWrappedFunction =
         generateWrapRecordsFn(isPreppedAPI, cfg, dataGen::generateInserts);
@@ -392,7 +394,7 @@ public class TestCleaner extends HoodieClientTestBase {
         assertNoWriteErrors(statuses);
 
         metaClient = HoodieTableMetaClient.reload(metaClient);
-        HoodieTable table1 = HoodieTable.create(metaClient, cfg, hadoopConf);
+        HoodieSparkTable table1 = HoodieSparkTable.create(cfg, context, metaClient);
         HoodieTimeline activeTimeline = table1.getCompletedCommitsTimeline();
         // NOTE: See CleanPlanner#getFilesToCleanKeepingLatestCommits. We explicitly keep one commit before earliest
         // commit
@@ -440,7 +442,7 @@ public class TestCleaner extends HoodieClientTestBase {
    * @param config HoodieWriteConfig
    */
   private List<HoodieCleanStat> runCleaner(HoodieWriteConfig config, boolean simulateRetryFailure) throws IOException {
-    HoodieWriteClient<?> writeClient = getHoodieWriteClient(config);
+    HoodieSparkWriteClient<?> writeClient = getHoodieWriteClient(config);
     String cleanInstantTs = getNextInstant();
     HoodieCleanMetadata cleanMetadata1 = writeClient.clean(cleanInstantTs);
 
@@ -974,11 +976,11 @@ public class TestCleaner extends HoodieClientTestBase {
 
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath).build();
     metaClient = HoodieTableMetaClient.reload(metaClient);
-    HoodieTable table = HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkTable table = HoodieSparkTable.create(config, context, metaClient);
     table.getActiveTimeline().transitionRequestedToInflight(
         new HoodieInstant(State.REQUESTED, HoodieTimeline.COMMIT_ACTION, "000"), Option.empty());
     metaClient.reloadActiveTimeline();
-    table.rollback(jsc, "001", new HoodieInstant(State.INFLIGHT, HoodieTimeline.COMMIT_ACTION, "000"), true);
+    table.rollback(context, "001", new HoodieInstant(State.INFLIGHT, HoodieTimeline.COMMIT_ACTION, "000"), true);
     final int numTempFilesAfter = testTable.listAllFilesInTempFolder().size();
     assertEquals(0, numTempFilesAfter, "All temp files are deleted.");
   }
@@ -1106,7 +1108,7 @@ public class TestCleaner extends HoodieClientTestBase {
         if (j == i && j <= maxNumFileIdsForCompaction) {
           expFileIdToPendingCompaction.put(fileId, compactionInstants[j]);
           metaClient = HoodieTableMetaClient.reload(metaClient);
-          HoodieTable table = HoodieTable.create(metaClient, config, hadoopConf);
+          HoodieSparkTable table = HoodieSparkTable.create(config, context, metaClient);
           FileSlice slice =
               table.getSliceView().getLatestFileSlices(HoodieTestDataGenerator.DEFAULT_FIRST_PARTITION_PATH)
                   .filter(fs -> fs.getFileId().equals(fileId)).findFirst().get();
@@ -1148,7 +1150,7 @@ public class TestCleaner extends HoodieClientTestBase {
 
     // Test for safety
     final HoodieTableMetaClient newMetaClient = HoodieTableMetaClient.reload(metaClient);
-    final HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    final HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
     expFileIdToPendingCompaction.forEach((fileId, value) -> {
       String baseInstantForCompaction = fileIdToLatestInstantBeforeCompaction.get(fileId);
