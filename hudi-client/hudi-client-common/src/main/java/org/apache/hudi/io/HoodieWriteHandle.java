@@ -125,10 +125,6 @@ public abstract class HoodieWriteHandle<T extends HoodieRecordPayload, I, K, O, 
     return writerSchemaWithMetafields;
   }
 
-  public Schema getWriterSchema() {
-    return writerSchema;
-  }
-
   /**
    * Determines whether we can accept the incoming records, into the current file. Depending on
    * <p>
@@ -170,6 +166,10 @@ public abstract class HoodieWriteHandle<T extends HoodieRecordPayload, I, K, O, 
   public abstract WriteStatus close();
 
   public abstract WriteStatus getWriteStatus();
+
+  public Schema getWriterSchema() {
+    return writerSchema;
+  }
 
   public abstract IOType getIOType();
 

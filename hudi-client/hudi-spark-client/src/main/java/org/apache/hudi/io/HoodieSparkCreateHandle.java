@@ -22,6 +22,7 @@ import org.apache.avro.Schema;
 import org.apache.hudi.client.TaskContextSupplier;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.fs.FSUtils;
+import org.apache.hudi.common.model.HoodieKey;
 import org.apache.hudi.common.model.HoodiePartitionMetadata;
 import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.model.HoodieRecordLocation;
@@ -35,19 +36,23 @@ import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieInsertException;
 import org.apache.hudi.io.storage.HoodieFileWriter;
 import org.apache.hudi.io.storage.HoodieFileWriterFactory;
+import org.apache.hudi.table.BaseMarkerFiles;
 import org.apache.hudi.table.HoodieTable;
 
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.hadoop.fs.Path;
+import org.apache.hudi.table.SparkMarkerFiles;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-public class HoodieSparkCreateHandle<T extends HoodieRecordPayload> extends BaseHoodieSparkWriteHandle<T> {
+public class HoodieSparkCreateHandle<T extends HoodieRecordPayload> extends HoodieWriteHandle<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> {
 
   private static final Logger LOG = LogManager.getLogger(HoodieSparkCreateHandle.class);
 
@@ -95,6 +100,12 @@ public class HoodieSparkCreateHandle<T extends HoodieRecordPayload> extends Base
     this(config, instantTime, hoodieTable, partitionPath, fileId, taskContextSupplier);
     this.recordMap = recordIterator;
     this.useWriterSchema = true;
+  }
+
+  @Override
+  protected void createMarkerFile(String partitionPath, String dataFileName) {
+    BaseMarkerFiles markerFiles = new SparkMarkerFiles(hoodieTable, instantTime);
+    markerFiles.create(partitionPath, dataFileName, getIOType());
   }
 
   @Override

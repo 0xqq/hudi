@@ -144,7 +144,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> upsertPreppedRecords(JavaRDD<HoodieRecord<T>> preppedRecords, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
+    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT_PREPPED, instantTime);
     table.validateUpsertSchema();
     setOperationType(WriteOperationType.UPSERT_PREPPED);
     startAsyncCleaningIfEnabled(this, instantTime);
@@ -154,7 +154,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> insert(JavaRDD<HoodieRecord<T>> records, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
+    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.INSERT, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.INSERT);
     startAsyncCleaningIfEnabled(this, instantTime);
@@ -164,7 +164,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> insertPreppedRecords(JavaRDD<HoodieRecord<T>> preppedRecords, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
+    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.INSERT_PREPPED, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.INSERT_PREPPED);
     startAsyncCleaningIfEnabled(this, instantTime);
@@ -179,7 +179,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> bulkInsert(JavaRDD<HoodieRecord<T>> records, String instantTime, Option<BulkInsertPartitioner<JavaRDD<HoodieRecord<T>>>> userDefinedBulkInsertPartitioner) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
+    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.BULK_INSERT, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.BULK_INSERT);
     startAsyncCleaningIfEnabled(this, instantTime);
@@ -189,7 +189,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> bulkInsertPreppedRecords(JavaRDD<HoodieRecord<T>> preppedRecords, String instantTime, Option<BulkInsertPartitioner<JavaRDD<HoodieRecord<T>>>> bulkInsertPartitioner) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
+    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.BULK_INSERT_PREPPED, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.BULK_INSERT_PREPPED);
     startAsyncCleaningIfEnabled(this, instantTime);
@@ -199,7 +199,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> delete(JavaRDD<HoodieKey> keys, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
+    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.DELETE, instantTime);
     setOperationType(WriteOperationType.DELETE);
     HoodieWriteMetadata result = table.delete(context,instantTime, keys);
     return postWrite(result, instantTime, table);

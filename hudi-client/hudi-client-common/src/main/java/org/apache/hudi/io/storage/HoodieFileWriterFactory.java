@@ -47,7 +47,7 @@ public class HoodieFileWriterFactory {
       return newParquetFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier);
     }
     if (HFILE.getFileExtension().equals(extension)) {
-      return newHFileFileWriter(instantTime, path, config, schema, hoodieTable, sparkTaskContextSupplier);
+      return newHFileFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier);
     }
     throw new UnsupportedOperationException(extension + " format not supported yet.");
   }
@@ -68,13 +68,13 @@ public class HoodieFileWriterFactory {
 
   private static <T extends HoodieRecordPayload, R extends IndexedRecord> HoodieFileWriter<R> newHFileFileWriter(
       String instantTime, Path path, HoodieWriteConfig config, Schema schema, HoodieTable hoodieTable,
-      SparkTaskContextSupplier sparkTaskContextSupplier) throws IOException {
+      TaskContextSupplier taskContextSupplier) throws IOException {
 
     BloomFilter filter = createBloomFilter(config);
     HoodieHFileConfig hfileConfig = new HoodieHFileConfig(hoodieTable.getHadoopConf(),
         config.getHFileCompressionAlgorithm(), config.getHFileBlockSize(), config.getHFileMaxFileSize(), filter);
 
-    return new HoodieHFileWriter<>(instantTime, path, hfileConfig, schema, sparkTaskContextSupplier);
+    return new HoodieHFileWriter<>(instantTime, path, hfileConfig, schema, taskContextSupplier);
   }
 
   private static BloomFilter createBloomFilter(HoodieWriteConfig config) {

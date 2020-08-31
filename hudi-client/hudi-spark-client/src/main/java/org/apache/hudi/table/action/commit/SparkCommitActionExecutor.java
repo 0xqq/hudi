@@ -39,7 +39,7 @@ import org.apache.hudi.exception.HoodieUpsertException;
 import org.apache.hudi.execution.SparkLazyInsertIterable;
 import org.apache.hudi.io.HoodieSortedMergeHandle;
 import org.apache.hudi.io.HoodieSparkMergeHandle;
-import org.apache.hudi.io.SparkAppendHandleFactory;
+import org.apache.hudi.io.SparkCreateHandleFactory;
 import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.table.SparkWorkloadProfile;
@@ -287,7 +287,7 @@ public abstract class SparkCommitActionExecutor<T extends HoodieRecordPayload> e
       return Collections.singletonList((List<WriteStatus>) Collections.EMPTY_LIST).iterator();
     }
     return new SparkLazyInsertIterable(recordItr, true, config, instantTime, table, idPfx,
-        taskContextSupplier, new SparkAppendHandleFactory<>());
+        taskContextSupplier, new SparkCreateHandleFactory<>());
   }
 
   public Partitioner getUpsertPartitioner(SparkWorkloadProfile profile) {

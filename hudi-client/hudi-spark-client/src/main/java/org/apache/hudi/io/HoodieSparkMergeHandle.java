@@ -18,11 +18,13 @@
 
 package org.apache.hudi.io;
 
+import org.apache.avro.Schema;
 import org.apache.hudi.client.TaskContextSupplier;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.client.utils.SparkConfigUtils;
 import org.apache.hudi.common.fs.FSUtils;
 import org.apache.hudi.common.model.HoodieBaseFile;
+import org.apache.hudi.common.model.HoodieKey;
 import org.apache.hudi.common.model.HoodiePartitionMetadata;
 import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.model.HoodieRecordLocation;
@@ -34,17 +36,22 @@ import org.apache.hudi.common.util.DefaultSizeEstimator;
 import org.apache.hudi.common.util.HoodieRecordSizeEstimator;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.common.util.collection.ExternalSpillableMap;
+import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieIOException;
 import org.apache.hudi.exception.HoodieUpsertException;
 import org.apache.hudi.io.storage.HoodieFileWriter;
+import org.apache.hudi.table.BaseMarkerFiles;
 import org.apache.hudi.table.HoodieTable;
 
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.hadoop.fs.Path;
+import org.apache.hudi.table.SparkMarkerFiles;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -53,7 +60,7 @@ import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings("Duplicates")
-public class HoodieSparkMergeHandle<T extends HoodieRecordPayload> extends BaseHoodieSparkWriteHandle<T> {
+public class HoodieSparkMergeHandle<T extends HoodieRecordPayload> extends HoodieWriteHandle<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> {
 
   private static final Logger LOG = LogManager.getLogger(HoodieSparkMergeHandle.class);
 
@@ -298,6 +305,22 @@ public class HoodieSparkMergeHandle<T extends HoodieRecordPayload> extends BaseH
 
   public Path getOldFilePath() {
     return oldFilePath;
+  }
+
+  @Override
+  protected void createMarkerFile(String partitionPath, String dataFileName) {
+    BaseMarkerFiles markerFiles = new SparkMarkerFiles(hoodieTable, instantTime);
+    markerFiles.create(partitionPath, dataFileName, getIOType());
+  }
+
+  @Override
+  public Schema getWriterSchemaWithMetafields() {
+    return writerSchemaWithMetafields;
+  }
+
+  @Override
+  public Schema getWriterSchema() {
+    return writerSchema;
   }
 
   @Override

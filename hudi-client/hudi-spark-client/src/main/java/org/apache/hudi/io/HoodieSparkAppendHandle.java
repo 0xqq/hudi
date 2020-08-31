@@ -44,12 +44,17 @@ import org.apache.hudi.common.table.log.block.HoodieLogBlock;
 import org.apache.hudi.common.table.log.block.HoodieLogBlock.HeaderMetadataType;
 import org.apache.hudi.common.table.view.TableFileSystemView.SliceView;
 import org.apache.hudi.common.util.Option;
+import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieAppendException;
 import org.apache.hudi.exception.HoodieUpsertException;
+import org.apache.hudi.table.BaseMarkerFiles;
 import org.apache.hudi.table.HoodieTable;
+import org.apache.hudi.table.SparkMarkerFiles;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.util.SizeEstimator;
 
 import java.io.IOException;
@@ -63,7 +68,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * IO Operation to append data onto an existing file.
  */
-public class HoodieSparkAppendHandle<T extends HoodieRecordPayload>  extends BaseHoodieSparkWriteHandle<T> {
+public class HoodieSparkAppendHandle<T extends HoodieRecordPayload>  extends HoodieWriteHandle<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> {
 
   private static final Logger LOG = LogManager.getLogger(HoodieSparkAppendHandle.class);
   // This acts as the sequenceID for records written
@@ -224,6 +229,12 @@ public class HoodieSparkAppendHandle<T extends HoodieRecordPayload>  extends Bas
     } catch (Exception e) {
       throw new HoodieAppendException("Failed while appending records to " + currentLogFile.getPath(), e);
     }
+  }
+
+  @Override
+  protected void createMarkerFile(String partitionPath, String dataFileName) {
+    BaseMarkerFiles markerFiles = new SparkMarkerFiles(hoodieTable, instantTime);
+    markerFiles.create(partitionPath, dataFileName, getIOType());
   }
 
   @Override
