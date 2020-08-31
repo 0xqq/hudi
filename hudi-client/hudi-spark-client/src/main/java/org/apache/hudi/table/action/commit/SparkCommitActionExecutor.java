@@ -18,6 +18,7 @@
 
 package org.apache.hudi.table.action.commit;
 
+import org.apache.hudi.client.SparkTaskContextSupplier;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.client.utils.SparkConfigUtils;
 import org.apache.hudi.common.HoodieEngineContext;
@@ -36,6 +37,7 @@ import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieCommitException;
 import org.apache.hudi.exception.HoodieUpsertException;
 import org.apache.hudi.execution.SparkLazyInsertIterable;
+import org.apache.hudi.io.HoodieSortedMergeHandle;
 import org.apache.hudi.io.HoodieSparkMergeHandle;
 import org.apache.hudi.io.SparkAppendHandleFactory;
 import org.apache.hudi.table.HoodieSparkTable;
@@ -51,10 +53,12 @@ import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -123,9 +127,26 @@ public abstract class SparkCommitActionExecutor<T extends HoodieRecordPayload> e
   }
 
   private JavaRDD<HoodieRecord<T>> partition(JavaRDD<HoodieRecord<T>> dedupedRecords, Partitioner partitioner) {
-    return dedupedRecords.mapToPair(
-        record -> new Tuple2<>(new Tuple2<>(record.getKey(), Option.ofNullable(record.getCurrentLocation())), record))
-        .partitionBy(partitioner).map(Tuple2::_2);
+    JavaPairRDD<Tuple2, HoodieRecord<T>> mappedRDD = dedupedRecords.mapToPair(
+        record -> new Tuple2<>(new Tuple2<>(record.getKey(), Option.ofNullable(record.getCurrentLocation())), record));
+
+    JavaPairRDD<Tuple2, HoodieRecord<T>> partitionedRDD;
+    if (table.requireSortedRecords()) {
+      // Partition and sort within each partition as a single step. This is faster than partitioning first and then
+      // applying a sort.
+      Comparator<Tuple2> comparator = (Comparator<Tuple2> & Serializable)(t1, t2) -> {
+        HoodieKey key1 = (HoodieKey) t1._1;
+        HoodieKey key2 = (HoodieKey) t2._1;
+        return key1.getRecordKey().compareTo(key2.getRecordKey());
+      };
+
+      partitionedRDD = mappedRDD.repartitionAndSortWithinPartitions(partitioner, comparator);
+    } else {
+      // Partition only
+      partitionedRDD = mappedRDD.partitionBy(partitioner);
+    }
+
+    return partitionedRDD.map(Tuple2::_2);
   }
 
   protected void updateIndexAndCommitIfNeeded(JavaRDD<WriteStatus> writeStatusRDD, HoodieWriteMetadata result) {
@@ -244,7 +265,11 @@ public abstract class SparkCommitActionExecutor<T extends HoodieRecordPayload> e
   }
 
   protected HoodieSparkMergeHandle getUpdateHandle(String partitionPath, String fileId, Iterator<HoodieRecord<T>> recordItr) {
-    return new HoodieSparkMergeHandle<>(config, instantTime, table, recordItr, partitionPath, fileId, taskContextSupplier);
+    if (table.requireSortedRecords()) {
+      return new HoodieSortedMergeHandle<>(config, instantTime, (HoodieSparkTable) table, recordItr, partitionPath, fileId, (SparkTaskContextSupplier) taskContextSupplier);
+    } else {
+      return new HoodieSparkMergeHandle<>(config, instantTime, table, recordItr, partitionPath, fileId, taskContextSupplier);
+    }
   }
 
   protected HoodieSparkMergeHandle getUpdateHandle(String partitionPath, String fileId,

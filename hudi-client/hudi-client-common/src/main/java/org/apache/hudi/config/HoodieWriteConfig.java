@@ -19,7 +19,6 @@
 package org.apache.hudi.config;
 
 import org.apache.hadoop.hbase.io.compress.Compression;
-import org.apache.hudi.client.HoodieWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.client.bootstrap.BootstrapMode;
 import org.apache.hudi.common.config.DefaultHoodieConfig;

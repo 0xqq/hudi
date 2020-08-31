@@ -23,6 +23,7 @@ import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.avro.model.HoodieRestoreMetadata;
 import org.apache.hudi.avro.model.HoodieRollbackMetadata;
 import org.apache.hudi.avro.model.HoodieSavepointMetadata;
+import org.apache.hudi.client.SparkTaskContextSupplier;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.HoodieSparkEngineContext;
@@ -40,6 +41,7 @@ import org.apache.hudi.exception.HoodieNotSupportedException;
 import org.apache.hudi.exception.HoodieUpsertException;
 import org.apache.hudi.index.HoodieIndex;
 import org.apache.hudi.index.HoodieSparkIndexFactory;
+import org.apache.hudi.io.HoodieSortedMergeHandle;
 import org.apache.hudi.io.HoodieSparkCreateHandle;
 import org.apache.hudi.io.HoodieSparkMergeHandle;
 import org.apache.hudi.table.action.HoodieWriteMetadata;
@@ -164,14 +166,19 @@ public class HoodieSparkCopyOnWriteTable<T extends HoodieRecordPayload> extends 
 
   protected HoodieSparkMergeHandle getUpdateHandle(String instantTime, String partitionPath, String fileId,
                                                    Map<String, HoodieRecord<T>> keyToNewRecords, HoodieBaseFile dataFileToBeMerged) {
-    return new HoodieSparkMergeHandle<>(config, instantTime, this, keyToNewRecords,
-        partitionPath, fileId, dataFileToBeMerged, taskContextSupplier);
+    if (requireSortedRecords()) {
+      return new HoodieSortedMergeHandle<>(config, instantTime, this, keyToNewRecords, partitionPath, fileId,
+          dataFileToBeMerged, (SparkTaskContextSupplier) taskContextSupplier);
+    } else {
+      return new HoodieSparkMergeHandle<>(config, instantTime, this, keyToNewRecords, partitionPath, fileId,
+          dataFileToBeMerged, taskContextSupplier);
+    }
   }
 
   public Iterator<List<WriteStatus>> handleInsert(String instantTime, String partitionPath, String fileId,
-                                                  Iterator<HoodieRecord<T>> recordItr) {
+                                                  Map<String, HoodieRecord<? extends HoodieRecordPayload>> recordMap) {
     HoodieSparkCreateHandle createHandle =
-        new HoodieSparkCreateHandle(config, instantTime, this, partitionPath, fileId, recordItr, taskContextSupplier);
+        new HoodieSparkCreateHandle(config, instantTime, this, partitionPath, fileId, recordMap, taskContextSupplier);
     createHandle.write();
     return Collections.singletonList(Collections.singletonList(createHandle.close())).iterator();
   }

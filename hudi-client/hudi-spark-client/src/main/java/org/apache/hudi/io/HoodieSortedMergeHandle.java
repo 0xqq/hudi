@@ -25,7 +25,7 @@ import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.model.HoodieRecordPayload;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieUpsertException;
-import org.apache.hudi.table.HoodieTable;
+import org.apache.hudi.table.HoodieSparkTable;
 
 import org.apache.avro.generic.GenericRecord;
 
@@ -41,11 +41,11 @@ import java.util.Queue;
  * The implementation performs a merge-sort by comparing the key of the record being written to the list of
  * keys in newRecordKeys (sorted in-memory).
  */
-public class HoodieSortedMergeHandle<T extends HoodieRecordPayload> extends HoodieMergeHandle<T> {
+public class HoodieSortedMergeHandle<T extends HoodieRecordPayload> extends HoodieSparkMergeHandle<T> {
 
   private Queue<String> newRecordKeysSorted = new PriorityQueue<>();
 
-  public HoodieSortedMergeHandle(HoodieWriteConfig config, String instantTime, HoodieTable<T> hoodieTable,
+  public HoodieSortedMergeHandle(HoodieWriteConfig config, String instantTime, HoodieSparkTable hoodieTable,
        Iterator<HoodieRecord<T>> recordItr, String partitionPath, String fileId, SparkTaskContextSupplier sparkTaskContextSupplier) {
     super(config, instantTime, hoodieTable, recordItr, partitionPath, fileId, sparkTaskContextSupplier);
     newRecordKeysSorted.addAll(keyToNewRecords.keySet());
@@ -54,7 +54,7 @@ public class HoodieSortedMergeHandle<T extends HoodieRecordPayload> extends Hood
   /**
    * Called by compactor code path.
    */
-  public HoodieSortedMergeHandle(HoodieWriteConfig config, String instantTime, HoodieTable<T> hoodieTable,
+  public HoodieSortedMergeHandle(HoodieWriteConfig config, String instantTime, HoodieSparkTable hoodieTable,
       Map<String, HoodieRecord<T>> keyToNewRecordsOrig, String partitionPath, String fileId,
       HoodieBaseFile dataFileToBeMerged, SparkTaskContextSupplier sparkTaskContextSupplier) {
     super(config, instantTime, hoodieTable, keyToNewRecordsOrig, partitionPath, fileId, dataFileToBeMerged,

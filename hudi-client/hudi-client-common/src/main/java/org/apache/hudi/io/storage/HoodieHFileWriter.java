@@ -19,7 +19,7 @@
 package org.apache.hudi.io.storage;
 
 import org.apache.hudi.avro.HoodieAvroUtils;
-import org.apache.hudi.client.SparkTaskContextSupplier;
+import org.apache.hudi.client.TaskContextSupplier;
 import org.apache.hudi.common.bloom.BloomFilter;
 import org.apache.hudi.common.fs.FSUtils;
 import org.apache.hudi.common.fs.HoodieWrapperFileSystem;
@@ -60,7 +60,7 @@ public class HoodieHFileWriter<T extends HoodieRecordPayload, R extends IndexedR
   private final HoodieWrapperFileSystem fs;
   private final long maxFileSize;
   private final String instantTime;
-  private final SparkTaskContextSupplier sparkTaskContextSupplier;
+  private final TaskContextSupplier taskContextSupplier;
   private HFile.Writer writer;
   private String minRecordKey;
   private String maxRecordKey;
@@ -69,7 +69,7 @@ public class HoodieHFileWriter<T extends HoodieRecordPayload, R extends IndexedR
   private static String DROP_BEHIND_CACHE_COMPACTION_KEY = "hbase.hfile.drop.behind.compaction";
 
   public HoodieHFileWriter(String instantTime, Path file, HoodieHFileConfig hfileConfig, Schema schema,
-      SparkTaskContextSupplier sparkTaskContextSupplier) throws IOException {
+      TaskContextSupplier taskContextSupplier) throws IOException {
 
     Configuration conf = FSUtils.registerFileSystem(file, hfileConfig.getHadoopConf());
     this.file = HoodieWrapperFileSystem.convertToHoodiePath(file, conf);
@@ -82,7 +82,7 @@ public class HoodieHFileWriter<T extends HoodieRecordPayload, R extends IndexedR
     //    + Math.round(hfileConfig.getMaxFileSize() * hfileConfig.getCompressionRatio());
     this.maxFileSize = hfileConfig.getMaxFileSize();
     this.instantTime = instantTime;
-    this.sparkTaskContextSupplier = sparkTaskContextSupplier;
+    this.taskContextSupplier = taskContextSupplier;
 
     HFileContext context = new HFileContextBuilder().withBlockSize(hfileConfig.getBlockSize())
           .withCompression(hfileConfig.getCompressionAlgorithm())
@@ -100,7 +100,7 @@ public class HoodieHFileWriter<T extends HoodieRecordPayload, R extends IndexedR
   @Override
   public void writeAvroWithMetadata(R avroRecord, HoodieRecord record) throws IOException {
     String seqId =
-        HoodieRecord.generateSequenceId(instantTime, sparkTaskContextSupplier.getPartitionIdSupplier().get(), recordIndex.getAndIncrement());
+        HoodieRecord.generateSequenceId(instantTime, taskContextSupplier.getPartitionIdSupplier().get(), recordIndex.getAndIncrement());
     HoodieAvroUtils.addHoodieKeyToRecord((GenericRecord) avroRecord, record.getRecordKey(), record.getPartitionPath(),
         file.getName());
     HoodieAvroUtils.addCommitMetadataToRecord((GenericRecord) avroRecord, instantTime, seqId);
