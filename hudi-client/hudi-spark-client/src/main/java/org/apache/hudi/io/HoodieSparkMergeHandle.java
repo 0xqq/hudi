@@ -211,6 +211,7 @@ public class HoodieSparkMergeHandle<T extends HoodieRecordPayload> extends Hoodi
   /**
    * Go through an old record. Here if we detect a newer version shows up, we write the new one to the file.
    */
+  @Override
   public void write(GenericRecord oldRecord) {
     String key = oldRecord.get(HoodieRecord.RECORD_KEY_METADATA_FIELD).toString();
     boolean copyOldRecord = true;

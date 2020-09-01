@@ -91,7 +91,7 @@ public class SparkMergeHelper<T extends HoodieRecordPayload> extends BaseMergeHe
       ThreadLocal<BinaryEncoder> encoderCache = new ThreadLocal<>();
       ThreadLocal<BinaryDecoder> decoderCache = new ThreadLocal<>();
       wrapper = new SparkBoundedInMemoryExecutor(table.getConfig(), readerIterator,
-          new SparkUpdateHandler(mergeHandle), record -> {
+          new UpdateHandler(mergeHandle), record -> {
         if (!externalSchemaTransformation) {
           return record;
         }

@@ -32,6 +32,7 @@ import org.apache.hudi.avro.HoodieAvroUtils;
 import org.apache.hudi.client.utils.MergingIterator;
 import org.apache.hudi.common.model.HoodieBaseFile;
 import org.apache.hudi.common.model.HoodieRecordPayload;
+import org.apache.hudi.common.util.queue.BoundedInMemoryQueueConsumer;
 import org.apache.hudi.exception.HoodieException;
 import org.apache.hudi.io.HoodieWriteHandle;
 import org.apache.hudi.io.storage.HoodieFileReader;
@@ -102,6 +103,31 @@ public abstract class BaseMergeHelper<T extends HoodieRecordPayload, I, K, O, P>
 
     return new MergingIterator<>(reader.getRecordIterator(readSchema), bootstrapReader.getRecordIterator(bootstrapReadSchema),
         (inputRecordPair) -> HoodieAvroUtils.stitchRecords(inputRecordPair.getLeft(), inputRecordPair.getRight(), mergeHandle.getWriterSchemaWithMetafields()));
+  }
+
+  /**
+   * Consumer that dequeues records from queue and sends to Merge Handle.
+   */
+  static class UpdateHandler extends BoundedInMemoryQueueConsumer<GenericRecord, Void> {
+
+    private final HoodieWriteHandle upsertHandle;
+
+    UpdateHandler(HoodieWriteHandle upsertHandle) {
+      this.upsertHandle = upsertHandle;
+    }
+
+    @Override
+    protected void consumeOneRecord(GenericRecord record) {
+      upsertHandle.write(record);
+    }
+
+    @Override
+    protected void finish() {}
+
+    @Override
+    protected Void getResult() {
+      return null;
+    }
   }
 
 }

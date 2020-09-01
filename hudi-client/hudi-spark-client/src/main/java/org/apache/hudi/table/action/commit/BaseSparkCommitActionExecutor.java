@@ -63,25 +63,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public abstract class SparkCommitActionExecutor<T extends HoodieRecordPayload> extends BaseCommitActionExecutor<T,
+public abstract class BaseSparkCommitActionExecutor<T extends HoodieRecordPayload> extends BaseCommitActionExecutor<T,
     JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>, HoodieWriteMetadata> {
 
-  private static final Logger LOG = LogManager.getLogger(SparkCommitActionExecutor.class);
+  private static final Logger LOG = LogManager.getLogger(BaseSparkCommitActionExecutor.class);
 
-  public SparkCommitActionExecutor(HoodieEngineContext context,
-                                   HoodieWriteConfig config,
-                                   HoodieTable table,
-                                   String instantTime,
-                                   WriteOperationType operationType) {
+  public BaseSparkCommitActionExecutor(HoodieEngineContext context,
+                                       HoodieWriteConfig config,
+                                       HoodieTable table,
+                                       String instantTime,
+                                       WriteOperationType operationType) {
     super(context, config, table, instantTime, operationType, Option.empty());
   }
 
-  public SparkCommitActionExecutor(HoodieEngineContext context,
-                                   HoodieWriteConfig config,
-                                   HoodieTable table,
-                                   String instantTime,
-                                   WriteOperationType operationType,
-                                   Option extraMetadata) {
+  public BaseSparkCommitActionExecutor(HoodieEngineContext context,
+                                       HoodieWriteConfig config,
+                                       HoodieTable table,
+                                       String instantTime,
+                                       WriteOperationType operationType,
+                                       Option extraMetadata) {
     super(context, config, table, instantTime, operationType, extraMetadata);
   }
 

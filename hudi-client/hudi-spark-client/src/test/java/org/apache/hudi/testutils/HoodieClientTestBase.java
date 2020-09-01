@@ -447,7 +447,7 @@ public class HoodieClientTestBase extends HoodieClientTestHarness {
           "Expecting " + expTotalCommits + " commits.");
       assertEquals(newCommitTime, timeline.lastInstant().get().getTimestamp(),
           "Latest commit should be " + newCommitTime);
-      assertEquals(expRecordsInThisCommit, HoodieClientTestUtils.readCommit(basePath, sqlContext, timeline, newCommitTime).count(),
+      assertEquals(expRecordsInThisCommit, HoodieClientTestUtils.readCommit(basePath, context, timeline, newCommitTime).count(),
           "Must contain " + expRecordsInThisCommit + " records");
 
       // Check the entire dataset has all records still
@@ -459,13 +459,13 @@ public class HoodieClientTestBase extends HoodieClientTestHarness {
           "Must contain " + expTotalRecords + " records");
 
       // Check that the incremental consumption from prevCommitTime
-      assertEquals(HoodieClientTestUtils.readCommit(basePath, sqlContext, timeline, newCommitTime).count(),
-          HoodieClientTestUtils.countRecordsSince(jsc, basePath, sqlContext, timeline, prevCommitTime),
+      assertEquals(HoodieClientTestUtils.readCommit(basePath, context, timeline, newCommitTime).count(),
+          HoodieClientTestUtils.countRecordsSince(jsc, basePath, sqlContext,timeline, prevCommitTime),
           "Incremental consumption from " + prevCommitTime + " should give all records in latest commit");
       if (commitTimesBetweenPrevAndNew.isPresent()) {
         commitTimesBetweenPrevAndNew.get().forEach(ct -> {
-          assertEquals(HoodieClientTestUtils.readCommit(basePath, sqlContext, timeline, newCommitTime).count(),
-              HoodieClientTestUtils.countRecordsSince(jsc, basePath, sqlContext, timeline, ct),
+          assertEquals(HoodieClientTestUtils.readCommit(basePath, context, timeline, newCommitTime).count(),
+              HoodieClientTestUtils.countRecordsSince(jsc, basePath, sqlContext,timeline, ct),
               "Incremental consumption from " + ct + " should give all records in latest commit");
         });
       }
@@ -515,7 +515,7 @@ public class HoodieClientTestBase extends HoodieClientTestHarness {
           "Expecting 3 commits.");
       assertEquals(newCommitTime, timeline.lastInstant().get().getTimestamp(),
           "Latest commit should be " + newCommitTime);
-      assertEquals(expRecordsInThisCommit, HoodieClientTestUtils.readCommit(basePath, sqlContext, timeline, newCommitTime).count(),
+      assertEquals(expRecordsInThisCommit, HoodieClientTestUtils.readCommit(basePath, context, timeline, newCommitTime).count(),
           "Must contain " + expRecordsInThisCommit + " records");
 
       // Check the entire dataset has all records still
@@ -527,7 +527,7 @@ public class HoodieClientTestBase extends HoodieClientTestHarness {
           "Must contain " + expTotalRecords + " records");
 
       // Check that the incremental consumption from prevCommitTime
-      assertEquals(HoodieClientTestUtils.readCommit(basePath, sqlContext, timeline, newCommitTime).count(),
+      assertEquals(HoodieClientTestUtils.readCommit(basePath, context, timeline, newCommitTime).count(),
           HoodieClientTestUtils.countRecordsSince(jsc, basePath, sqlContext, timeline, prevCommitTime),
           "Incremental consumption from " + prevCommitTime + " should give no records in latest commit,"
               + " since it is a delete operation");

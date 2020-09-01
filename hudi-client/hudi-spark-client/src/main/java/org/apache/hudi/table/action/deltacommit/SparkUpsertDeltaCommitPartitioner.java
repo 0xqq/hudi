@@ -112,7 +112,7 @@ public class SparkUpsertDeltaCommitPartitioner<T extends HoodieRecordPayload<T>>
   }
 
   public List<String> getSmallFileIds() {
-    return (List<String>) smallFiles.stream().map(smallFile -> ((SmallFile) smallFile).location.getFileId())
+    return smallFiles.stream().map(smallFile -> smallFile.location.getFileId())
         .collect(Collectors.toList());
   }
 

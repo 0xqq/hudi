@@ -53,27 +53,12 @@ public class SparkDeleteHelper<T extends HoodieRecordPayload,R> extends BaseDele
     private static final SparkDeleteHelper SPARK_DELETE_HELPER = new SparkDeleteHelper();
   }
 
-  /**
-   * Deduplicate Hoodie records, using the given deduplication function.
-   *
-   * @param keys RDD of HoodieKey to deduplicate
-   * @param table target Hoodie table for deduplicating
-   * @param parallelism parallelism or partitions to be used while reducing/deduplicating
-   * @return RDD of HoodieKey already be deduplicated
-   */
-  private static  <T extends HoodieRecordPayload<T>> JavaRDD<HoodieKey> deduplicateKeys(JavaRDD<HoodieKey> keys,
-      HoodieTable<T> table, int parallelism) {
   public static SparkDeleteHelper newInstance() {
     return DeleteHelperHolder.SPARK_DELETE_HELPER;
   }
 
   @Override
-  public JavaRDD<HoodieKey> deduplicateKeys(JavaRDD<HoodieKey> keys,
-                                            HoodieTable<T, JavaRDD<HoodieRecord<T>>,
-                                                JavaRDD<HoodieKey>,
-                                                JavaRDD<WriteStatus>,
-                                                JavaPairRDD<HoodieKey,
-                                                    Option<Pair<String, String>>>> table) {
+  public JavaRDD<HoodieKey> deduplicateKeys(JavaRDD<HoodieKey> keys, HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table, int parallelism) {
     boolean isIndexingGlobal = table.getIndex().isGlobal();
     if (isIndexingGlobal) {
       return keys.keyBy(HoodieKey::getRecordKey)
@@ -84,33 +69,15 @@ public class SparkDeleteHelper<T extends HoodieRecordPayload,R> extends BaseDele
     }
   }
 
-  public static <T extends HoodieRecordPayload<T>> HoodieWriteMetadata execute(String instantTime,
-                                                                               JavaRDD<HoodieKey> keys, HoodieEngineContext context,
-                                                                               HoodieWriteConfig config, HoodieTable<T, JavaRDD<HoodieRecord<T>>,
-        JavaRDD<HoodieKey>,
-        JavaRDD<WriteStatus>,
-        JavaPairRDD<HoodieKey,
-        Option<Pair<String, String>>>> table,
-        BaseCommitActionExecutor<T, JavaRDD<HoodieRecord<T>>,
-        JavaRDD<HoodieKey>,
-        JavaRDD<WriteStatus>,
-        JavaPairRDD<HoodieKey,
-        Option<Pair<String, String>>>> deleteExecutor) {
   @Override
   public HoodieWriteMetadata<JavaRDD<WriteStatus>> execute(String instantTime,
                                                            JavaRDD<HoodieKey> keys,
                                                            HoodieEngineContext context,
                                                            HoodieWriteConfig config,
-                                                           HoodieTable<T, JavaRDD<HoodieRecord<T>>,
-                                                               JavaRDD<HoodieKey>,
-                                                               JavaRDD<WriteStatus>,
-                                                               JavaPairRDD<HoodieKey,
-                                                                   Option<Pair<String, String>>>> table,
-                                                           BaseCommitActionExecutor<T, JavaRDD<HoodieRecord<T>>,
-                                                               JavaRDD<HoodieKey>,
-                                                               JavaRDD<WriteStatus>,
-                                                               JavaPairRDD<HoodieKey,
-                                                                   Option<Pair<String, String>>>,R> deleteExecutor) {
+                                                           HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table,
+                                                           BaseCommitActionExecutor<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>, R> deleteExecutor) {
+    JavaSparkContext jsc = HoodieSparkEngineContext.getSparkContext(context);
+
     try {
       HoodieWriteMetadata result = null;
       JavaRDD<HoodieKey> dedupedKeys = keys;
@@ -136,7 +103,6 @@ public class SparkDeleteHelper<T extends HoodieRecordPayload,R> extends BaseDele
         result = deleteExecutor.execute(taggedValidRecords);
         result.setIndexLookupDuration(tagLocationDuration);
       } else {
-        JavaSparkContext jsc = HoodieSparkEngineContext.getSparkContext(context);
         // if entire set of keys are non existent
         deleteExecutor.saveWorkloadProfileMetadataToInflight(new SparkWorkloadProfile(jsc.emptyRDD()), instantTime);
         result = new HoodieWriteMetadata();
@@ -151,4 +117,5 @@ public class SparkDeleteHelper<T extends HoodieRecordPayload,R> extends BaseDele
       throw new HoodieUpsertException("Failed to delete for commit time " + instantTime, e);
     }
   }
+
 }

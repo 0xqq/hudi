@@ -39,10 +39,12 @@ public abstract class BaseDeleteHelper<T extends HoodieRecordPayload, I, K, O, P
   /**
    * Deduplicate Hoodie records, using the given deduplication function.
    *
-   * @param keys RDD of HoodieKey to deduplicate
-   * @return RDD of HoodieKey already be deduplicated
+   * @param keys HoodieKey to deduplicate
+   * @param table target Hoodie table for deduplicating
+   * @param parallelism parallelism or partitions to be used while reducing/deduplicating
+   * @return HoodieKey already be deduplicated
    */
-  public abstract K deduplicateKeys(K keys, HoodieTable<T, I, K, O, P> table);
+  public abstract K deduplicateKeys(K keys, HoodieTable<T, I, K, O, P> table, int parallelism);
 
   public abstract HoodieWriteMetadata<O> execute(String instantTime,
                                                  K keys,

@@ -217,7 +217,7 @@ public class HoodieSparkAppendHandle<T extends HoodieRecordPayload>  extends Hoo
   private void doAppend(Map<HeaderMetadataType, String> header) {
     try {
       header.put(HoodieLogBlock.HeaderMetadataType.INSTANT_TIME, instantTime);
-      header.put(HoodieLogBlock.HeaderMetadataType.SCHEMA, writerSchema.toString());
+      header.put(HoodieLogBlock.HeaderMetadataType.SCHEMA, writerSchemaWithMetafields.toString());
       if (recordList.size() > 0) {
         writer = writer.appendBlock(HoodieDataBlock.getBlock(hoodieTable.getLogDataBlockFormat(), recordList, header));
         recordList.clear();
@@ -256,6 +256,11 @@ public class HoodieSparkAppendHandle<T extends HoodieRecordPayload>  extends Hoo
       writeStatus.markFailure(record, t, recordMetadata);
       LOG.error("Error writing record " + record, t);
     }
+  }
+
+  @Override
+  public void write(GenericRecord oldRecord) {
+    // NO_OP
   }
 
   @Override

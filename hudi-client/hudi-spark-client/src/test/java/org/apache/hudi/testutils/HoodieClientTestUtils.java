@@ -21,6 +21,7 @@ package org.apache.hudi.testutils;
 import org.apache.hudi.avro.HoodieAvroUtils;
 import org.apache.hudi.client.HoodieReadClient;
 import org.apache.hudi.client.SparkTaskContextSupplier;
+import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.bloom.BloomFilter;
 import org.apache.hudi.common.bloom.BloomFilterFactory;
 import org.apache.hudi.common.bloom.BloomFilterTypeCode;
@@ -109,7 +110,7 @@ public class HoodieClientTestUtils {
     return fileIdToFullPath;
   }
 
-  public static Dataset<Row> readCommit(String basePath, SQLContext sqlContext, HoodieTimeline commitTimeline,
+  public static Dataset<Row> readCommit(String basePath, HoodieSparkEngineContext context, HoodieTimeline commitTimeline,
                                         String instantTime) {
     HoodieInstant commitInstant = new HoodieInstant(false, HoodieTimeline.COMMIT_ACTION, instantTime);
     if (!commitTimeline.containsInstant(commitInstant)) {
@@ -119,7 +120,7 @@ public class HoodieClientTestUtils {
       HashMap<String, String> paths =
           getLatestFileIDsToFullPath(basePath, commitTimeline, Arrays.asList(commitInstant));
       LOG.info("Path :" + paths.values());
-      return sqlContext.read().parquet(paths.values().toArray(new String[paths.size()]))
+      return context.getSqlContext().read().parquet(paths.values().toArray(new String[paths.size()]))
           .filter(String.format("%s ='%s'", HoodieRecord.COMMIT_TIME_METADATA_FIELD, instantTime));
     } catch (Exception e) {
       throw new HoodieException("Error reading commit " + instantTime, e);

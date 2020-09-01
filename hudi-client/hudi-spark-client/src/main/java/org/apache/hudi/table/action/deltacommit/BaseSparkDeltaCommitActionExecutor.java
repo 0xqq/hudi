@@ -32,7 +32,7 @@ import org.apache.hudi.io.HoodieSparkAppendHandle;
 import org.apache.hudi.io.SparkAppendHandleFactory;
 import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.table.SparkWorkloadProfile;
-import org.apache.hudi.table.action.commit.SparkCommitActionExecutor;
+import org.apache.hudi.table.action.commit.BaseSparkCommitActionExecutor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.spark.Partitioner;
@@ -43,29 +43,29 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public abstract class SparkDeltaCommitActionExecutor<T extends HoodieRecordPayload>
-    extends SparkCommitActionExecutor<T> {
+public abstract class BaseSparkDeltaCommitActionExecutor<T extends HoodieRecordPayload>
+    extends BaseSparkCommitActionExecutor<T> {
 
-  private static final Logger LOG = LogManager.getLogger(SparkDeltaCommitActionExecutor.class);
+  private static final Logger LOG = LogManager.getLogger(BaseSparkDeltaCommitActionExecutor.class);
   /**
    * UpsertPartitioner for MergeOnRead table type.
    */
   private SparkUpsertDeltaCommitPartitioner mergeOnReadUpsertPartitioner;
 
-  public SparkDeltaCommitActionExecutor(HoodieSparkEngineContext context,
-                                        HoodieWriteConfig config,
-                                        HoodieTable table,
-                                        String instantTime,
-                                        WriteOperationType operationType) {
+  public BaseSparkDeltaCommitActionExecutor(HoodieSparkEngineContext context,
+                                            HoodieWriteConfig config,
+                                            HoodieTable table,
+                                            String instantTime,
+                                            WriteOperationType operationType) {
     this(context, config, table, instantTime, operationType, Option.empty());
   }
 
-  public SparkDeltaCommitActionExecutor(HoodieSparkEngineContext context,
-                                        HoodieWriteConfig config,
-                                        HoodieTable table,
-                                        String instantTime,
-                                        WriteOperationType operationType,
-                                        Option<Map<String, String>> extraMetadata) {
+  public BaseSparkDeltaCommitActionExecutor(HoodieSparkEngineContext context,
+                                            HoodieWriteConfig config,
+                                            HoodieTable table,
+                                            String instantTime,
+                                            WriteOperationType operationType,
+                                            Option<Map<String, String>> extraMetadata) {
     super(context, config, table, instantTime, operationType, extraMetadata);
   }
 

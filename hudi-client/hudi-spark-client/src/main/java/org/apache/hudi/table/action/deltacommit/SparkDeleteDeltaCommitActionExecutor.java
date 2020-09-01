@@ -29,7 +29,7 @@ import org.apache.hudi.table.action.commit.SparkDeleteHelper;
 import org.apache.spark.api.java.JavaRDD;
 
 public class SparkDeleteDeltaCommitActionExecutor<T extends HoodieRecordPayload<T>>
-    extends SparkDeltaCommitActionExecutor<T> {
+    extends BaseSparkDeltaCommitActionExecutor<T> {
 
   private final JavaRDD<HoodieKey> keys;
 

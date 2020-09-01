@@ -35,7 +35,7 @@ import org.apache.hudi.table.action.commit.SparkBulkInsertHelper;
 import org.apache.spark.api.java.JavaRDD;
 
 public class SparkBulkInsertDeltaCommitActionExecutor<T extends HoodieRecordPayload<T>>
-    extends SparkDeltaCommitActionExecutor<T> {
+    extends BaseSparkDeltaCommitActionExecutor<T> {
 
   private final JavaRDD<HoodieRecord<T>> inputRecordsRDD;
   private final Option<BulkInsertPartitioner<T>> bulkInsertPartitioner;

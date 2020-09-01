@@ -126,11 +126,11 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
     // Initialize a local spark env
     jsc = new JavaSparkContext(HoodieClientTestUtils.getSparkConfForTest(appName + "#" + testMethodName));
     jsc.setLogLevel("ERROR");
-    hadoopConf = jsc.hadoopConfiguration();
 
     // SQLContext stuff
     sqlContext = new SQLContext(jsc);
     context = new HoodieSparkEngineContext(jsc);
+    hadoopConf = context.getHadoopConf().get();
   }
 
   /**
@@ -210,7 +210,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
       throw new IllegalStateException("The Spark context has not been initialized.");
     }
 
-    metaClient = HoodieTestUtils.init(hadoopConf, basePath, getTableType());
+    metaClient = HoodieTestUtils.init(context.getHadoopConf().get(), basePath, getTableType());
   }
 
   /**
@@ -324,7 +324,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
   }
 
   public HoodieReadClient getHoodieReadClient(String basePath) {
-    readClient = new HoodieReadClient(context, basePath, SQLContext.getOrCreate(jsc.sc()));
+    readClient = new HoodieReadClient(context, basePath, context.getSqlContext());
     return readClient;
   }
 

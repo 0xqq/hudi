@@ -32,7 +32,7 @@ import org.apache.hudi.table.action.commit.SparkBulkInsertHelper;
 import org.apache.spark.api.java.JavaRDD;
 
 public class SparkBulkInsertPreppedDeltaCommitActionExecutor<T extends HoodieRecordPayload<T>>
-    extends SparkDeltaCommitActionExecutor<T> {
+    extends BaseSparkDeltaCommitActionExecutor<T> {
 
   private final JavaRDD<HoodieRecord<T>> preppedInputRecordRdd;
   private final Option<BulkInsertPartitioner<T>> bulkInsertPartitioner;
@@ -42,7 +42,7 @@ public class SparkBulkInsertPreppedDeltaCommitActionExecutor<T extends HoodieRec
                                                          HoodieTable table,
                                                          String instantTime, JavaRDD<HoodieRecord<T>> preppedInputRecordRdd,
                                                          Option<BulkInsertPartitioner<T>> bulkInsertPartitioner) {
-    super(context, config, table, instantTime, WriteOperationType.BULK_INSERT);
+    super(context, config, table, instantTime, WriteOperationType.BULK_INSERT_PREPPED);
     this.preppedInputRecordRdd = preppedInputRecordRdd;
     this.bulkInsertPartitioner = bulkInsertPartitioner;
   }

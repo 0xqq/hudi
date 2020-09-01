@@ -142,6 +142,8 @@ public abstract class HoodieWriteHandle<T extends HoodieRecordPayload, I, K, O, 
     // NO_OP
   }
 
+  public abstract void write(GenericRecord oldRecord);
+
   /**
    * Perform the actual writing of the given record into the backing file.
    */

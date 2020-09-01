@@ -146,6 +146,11 @@ public class HoodieSparkCreateHandle<T extends HoodieRecordPayload> extends Hood
     }
   }
 
+  @Override
+  public void write(GenericRecord oldRecord) {
+    // NO_OP
+  }
+
   /**
    * Writes all records passed.
    */

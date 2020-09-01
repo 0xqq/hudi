@@ -29,13 +29,15 @@ import org.apache.hudi.table.action.commit.SparkWriteHelper;
 import org.apache.spark.api.java.JavaRDD;
 
 public class SparkUpsertDeltaCommitActionExecutor<T extends HoodieRecordPayload<T>>
-    extends SparkDeltaCommitActionExecutor<T> {
+    extends BaseSparkDeltaCommitActionExecutor<T> {
 
   private JavaRDD<HoodieRecord<T>> inputRecordsRDD;
 
   public SparkUpsertDeltaCommitActionExecutor(HoodieSparkEngineContext context,
-                                              HoodieWriteConfig config, HoodieTable table,
-                                              String instantTime, JavaRDD<HoodieRecord<T>> inputRecordsRDD) {
+                                              HoodieWriteConfig config,
+                                              HoodieTable table,
+                                              String instantTime,
+                                              JavaRDD<HoodieRecord<T>> inputRecordsRDD) {
     super(context, config, table, instantTime, WriteOperationType.UPSERT);
     this.inputRecordsRDD = inputRecordsRDD;
   }

@@ -469,8 +469,8 @@ public class TestBootstrap extends HoodieClientTestBase {
 
   public static class TestFullBootstrapDataProvider extends FullRecordBootstrapDataProvider<JavaRDD<HoodieRecord>> {
 
-    public TestFullBootstrapDataProvider(TypedProperties props, JavaSparkContext jsc) {
-      super(props, new HoodieSparkEngineContext(jsc));
+    public TestFullBootstrapDataProvider(TypedProperties props, HoodieSparkEngineContext context) {
+      super(props, context);
     }
 
     @Override

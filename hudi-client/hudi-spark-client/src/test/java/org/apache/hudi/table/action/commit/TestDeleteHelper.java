@@ -17,10 +17,15 @@
 
 package org.apache.hudi.table.action.commit;
 
+import org.apache.hudi.client.WriteStatus;
+import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.EmptyHoodieRecordPayload;
 import org.apache.hudi.common.model.HoodieKey;
+import org.apache.hudi.common.model.HoodieRecord;
+import org.apache.hudi.common.util.Option;
+import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.index.bloom.HoodieBloomIndex;
+import org.apache.hudi.index.bloom.HoodieSparkBloomIndex;
 import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.table.action.HoodieWriteMetadata;
 import org.apache.spark.Partition;
@@ -62,12 +67,14 @@ public class TestDeleteHelper {
   private static final boolean WITHOUT_COMBINE = false;
   private static final int DELETE_PARALLELISM = 200;
 
-  @Mock private HoodieBloomIndex index;
-  @Mock private HoodieTable<EmptyHoodieRecordPayload> table;
-  @Mock private CommitActionExecutor<EmptyHoodieRecordPayload> executor;
+  @Mock private HoodieSparkBloomIndex index;
+  @Mock private HoodieTable<EmptyHoodieRecordPayload,JavaRDD<HoodieRecord>,
+      JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table;
+  @Mock private BaseSparkCommitActionExecutor<EmptyHoodieRecordPayload> executor;
   @Mock private HoodieWriteMetadata metadata;
   @Mock private JavaPairRDD keyPairs;
   @Mock private JavaSparkContext jsc;
+  @Mock private HoodieSparkEngineContext context;
 
   private JavaRDD<HoodieKey> rddToDelete;
   private HoodieWriteConfig config;
@@ -75,6 +82,7 @@ public class TestDeleteHelper {
   @BeforeEach
   public void setUp() {
     when(table.getIndex()).thenReturn(index);
+    when(context.getJavaSparkContext()).thenReturn(jsc);
   }
 
   @Test
@@ -82,7 +90,7 @@ public class TestDeleteHelper {
     rddToDelete = mockEmptyHoodieKeyRdd();
     config = newWriteConfig(WITHOUT_COMBINE);
 
-    DeleteHelper.execute("test-time", rddToDelete, jsc, config, table, executor);
+    SparkDeleteHelper.newInstance().execute("test-time", rddToDelete, context, config, table, executor);
 
     verify(rddToDelete, never()).repartition(DELETE_PARALLELISM);
     verifyNoDeleteExecution();
@@ -93,7 +101,7 @@ public class TestDeleteHelper {
     rddToDelete = newHoodieKeysRddMock(2, CombineTestMode.None);
     config = newWriteConfig(WITHOUT_COMBINE);
 
-    DeleteHelper.execute("test-time", rddToDelete, jsc, config, table, executor);
+    SparkDeleteHelper.newInstance().execute("test-time", rddToDelete, context, config, table, executor);
 
     verify(rddToDelete, times(1)).repartition(DELETE_PARALLELISM);
     verifyDeleteExecution();
@@ -104,7 +112,7 @@ public class TestDeleteHelper {
     rddToDelete = newHoodieKeysRddMock(2, CombineTestMode.NoneGlobalIndex);
     config = newWriteConfig(WITH_COMBINE);
 
-    DeleteHelper.execute("test-time", rddToDelete, jsc, config, table, executor);
+    SparkDeleteHelper.newInstance().execute("test-time", rddToDelete, context, config, table, executor);
 
     verify(rddToDelete, times(1)).distinct(DELETE_PARALLELISM);
     verifyDeleteExecution();
@@ -116,7 +124,7 @@ public class TestDeleteHelper {
     config = newWriteConfig(WITH_COMBINE);
     when(index.isGlobal()).thenReturn(true);
 
-    DeleteHelper.execute("test-time", rddToDelete, jsc, config, table, executor);
+    SparkDeleteHelper.newInstance().execute("test-time", rddToDelete, context, config, table, executor);
 
     verify(keyPairs, times(1)).reduceByKey(any(), eq(DELETE_PARALLELISM));
     verifyDeleteExecution();

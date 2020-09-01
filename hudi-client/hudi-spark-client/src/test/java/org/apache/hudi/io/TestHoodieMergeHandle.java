@@ -108,7 +108,7 @@ public class TestHoodieMergeHandle extends HoodieClientTestHarness {
           "Expecting a single commit.");
       assertEquals(newCommitTime, timeline.lastInstant().get().getTimestamp(), "Latest commit should be 001");
       assertEquals(records.size(),
-          HoodieClientTestUtils.readCommit(basePath, sqlContext, timeline, newCommitTime).count(),
+          HoodieClientTestUtils.readCommit(basePath, context, timeline, newCommitTime).count(),
           "Must contain 44 records");
 
       /**

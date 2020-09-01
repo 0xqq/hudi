@@ -30,7 +30,7 @@ import org.apache.hudi.table.action.commit.SparkWriteHelper;
 import org.apache.spark.api.java.JavaRDD;
 
 public class SparkInsertDeltaCommitActionExecutor<T extends HoodieRecordPayload<T>>
-    extends SparkDeltaCommitActionExecutor<T> {
+    extends BaseSparkDeltaCommitActionExecutor<T> {
 
   private final JavaRDD<HoodieRecord<T>> inputRecordsRDD;
 

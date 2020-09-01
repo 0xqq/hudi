@@ -29,7 +29,7 @@ import org.apache.hudi.table.action.HoodieWriteMetadata;
 import org.apache.spark.api.java.JavaRDD;
 
 public class SparkDeleteCommitActionExecutor<T extends HoodieRecordPayload<T>>
-    extends SparkCommitActionExecutor<T> {
+    extends BaseSparkCommitActionExecutor<T> {
 
   private final JavaRDD<HoodieKey> keys;
 

@@ -70,7 +70,7 @@ import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.table.action.HoodieWriteMetadata;
 import org.apache.hudi.table.action.commit.BaseCommitActionExecutor;
 import org.apache.hudi.table.action.commit.SparkBulkInsertCommitActionExecutor;
-import org.apache.hudi.table.action.commit.SparkCommitActionExecutor;
+import org.apache.hudi.table.action.commit.BaseSparkCommitActionExecutor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -279,7 +279,7 @@ public class SparkBootstrapCommitActionExecutor<T extends HoodieRecordPayload>
     return Option.of((HoodieWriteMetadata)getBulkInsertActionExecutor(inputRecordsRDD).execute());
   }
 
-  protected SparkCommitActionExecutor getBulkInsertActionExecutor(JavaRDD<HoodieRecord> inputRecordsRDD) {
+  protected BaseSparkCommitActionExecutor getBulkInsertActionExecutor(JavaRDD<HoodieRecord> inputRecordsRDD) {
     return new SparkBulkInsertCommitActionExecutor((HoodieSparkEngineContext) context, new HoodieWriteConfig.Builder().withProps(config.getProps())
         .withSchema(bootstrapSchema).build(), table, HoodieTimeline.FULL_BOOTSTRAP_INSTANT_TS,
         inputRecordsRDD, extraMetadata);

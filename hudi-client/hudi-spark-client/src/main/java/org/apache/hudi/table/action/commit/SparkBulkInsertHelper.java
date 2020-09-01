@@ -96,7 +96,7 @@ public class SparkBulkInsertHelper<T extends HoodieRecordPayload, R> extends Bas
             partitioner.arePartitionRecordsSorted(), config, table, fileIDPrefixes), true)
         .flatMap(List::iterator);
 
-    ((SparkCommitActionExecutor) executor).updateIndexAndCommitIfNeeded(writeStatusRDD, result);
+    ((BaseSparkCommitActionExecutor) executor).updateIndexAndCommitIfNeeded(writeStatusRDD, result);
     return result;
   }
 }

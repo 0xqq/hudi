@@ -61,7 +61,7 @@ public class TestHoodieTimelineArchiveLog extends HoodieClientTestHarness {
     initDFS();
     initPath();
     initSparkContexts();
-    hadoopConf = dfs.getConf();
+    hadoopConf = context.getHadoopConf().get();
     hadoopConf.addResource(dfs.getConf());
     dfs.mkdirs(new Path(basePath));
     metaClient = HoodieTestUtils.init(hadoopConf, basePath);

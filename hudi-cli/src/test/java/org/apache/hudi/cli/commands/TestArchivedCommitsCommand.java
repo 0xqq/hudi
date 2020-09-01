@@ -24,6 +24,7 @@ import org.apache.hudi.cli.TableHeader;
 import org.apache.hudi.cli.testutils.AbstractShellIntegrationTest;
 import org.apache.hudi.cli.testutils.HoodieTestCommitMetadataGenerator;
 import org.apache.hudi.cli.testutils.HoodieTestCommitUtilities;
+import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.timeline.HoodieInstant;
@@ -57,6 +58,7 @@ public class TestArchivedCommitsCommand extends AbstractShellIntegrationTest {
   public void init() throws IOException {
     initDFS();
     jsc.hadoopConfiguration().addResource(dfs.getConf());
+    context = new HoodieSparkEngineContext(jsc);
     HoodieCLI.conf = dfs.getConf();
 
     // Create table and connect
