@@ -73,8 +73,8 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
   @Test
   public void testLoadInvolvedFiles() throws Exception {
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath).build();
-    HoodieGlobalBloomIndex index = new HoodieGlobalBloomIndex(config);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
 
     // Create some partitions, and put some files, along with the meta file
@@ -137,7 +137,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
   public void testExplodeRecordRDDWithFileComparisons() {
 
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath).build();
-    HoodieGlobalBloomIndex index = new HoodieGlobalBloomIndex(config);
+    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
 
     final Map<String, List<BloomIndexFileInfo>> partitionToFileIndexInfo = new HashMap<>();
     partitionToFileIndexInfo.put("2017/10/22", Arrays.asList(new BloomIndexFileInfo("f1"),
@@ -177,8 +177,8 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
   @Test
   public void testTagLocation() throws Exception {
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath).build();
-    HoodieGlobalBloomIndex index = new HoodieGlobalBloomIndex(config);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, hadoopConf);
+    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
 
     // Create some partitions, and put some files, along with the meta file
@@ -222,7 +222,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
     String fileId4 = testTable.addCommit("4000").withInserts("2015/03/12", record4);
 
     // partitions will NOT be respected by this loadInvolvedFiles(...) call
-    JavaRDD<HoodieRecord> taggedRecordRDD = index.tagLocation(recordRDD, jsc, hoodieTable);
+    JavaRDD<HoodieRecord> taggedRecordRDD = index.tagLocation(recordRDD, context, hoodieTable);
 
     for (HoodieRecord record : taggedRecordRDD.collect()) {
       switch (record.getRecordKey()) {
@@ -258,8 +258,8 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
         .withPath(basePath)
         .withIndexConfig(HoodieIndexConfig.newBuilder().withBloomIndexUpdatePartitionPath(true).build())
         .build();
-    HoodieGlobalBloomIndex index = new HoodieGlobalBloomIndex(config);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, jsc.hadoopConfiguration());
+    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
     final String p1 = "2016/01/31";
     final String p2 = "2016/02/28";
@@ -302,7 +302,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
 
     // test against incoming record with a different partition
     JavaRDD<HoodieRecord> recordRDD = jsc.parallelize(Collections.singletonList(incomingRecord));
-    JavaRDD<HoodieRecord> taggedRecordRDD = index.tagLocation(recordRDD, jsc, hoodieTable);
+    JavaRDD<HoodieRecord> taggedRecordRDD = index.tagLocation(recordRDD, context, hoodieTable);
 
     assertEquals(2, taggedRecordRDD.count());
     for (HoodieRecord record : taggedRecordRDD.collect()) {
@@ -323,7 +323,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
     // test against incoming record with the same partition
     JavaRDD<HoodieRecord> recordRDDSamePartition = jsc
         .parallelize(Collections.singletonList(incomingRecordSamePartition));
-    JavaRDD<HoodieRecord> taggedRecordRDDSamePartition = index.tagLocation(recordRDDSamePartition, jsc, hoodieTable);
+    JavaRDD<HoodieRecord> taggedRecordRDDSamePartition = index.tagLocation(recordRDDSamePartition, context, hoodieTable);
 
     assertEquals(1, taggedRecordRDDSamePartition.count());
     HoodieRecord record = taggedRecordRDDSamePartition.first();

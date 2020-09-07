@@ -20,7 +20,7 @@ package org.apache.hudi.utilities.deltastreamer;
 
 import org.apache.hudi.asyc.AbstractAsyncService;
 import org.apache.hudi.asyc.BaseAsyncCompactService;
-import org.apache.hudi.asyc.HoodieSparkAsyncCompactService;
+import org.apache.hudi.async.HoodieSparkAsyncCompactService;
 import org.apache.hudi.client.HoodieSparkWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieSparkEngineContext;

@@ -36,7 +36,7 @@ import java.util.List;
  * Abstract class to extend for plugging in extraction of {@link HoodieKey} from an Avro record.
  */
 @PublicAPIClass(maturity = ApiMaturityLevel.STABLE)
-public abstract class KeyGenerator implements Serializable, KeyGeneratorInterface {
+public abstract class KeyGenerator implements Serializable, SparkKeyGeneratorInterface {
 
   private static final String STRUCT_NAME = "hoodieRowTopLevelField";
   private static final String NAMESPACE = "hoodieRow";
@@ -70,6 +70,7 @@ public abstract class KeyGenerator implements Serializable, KeyGeneratorInterfac
    * @param row instance of {@link Row} from which record key is requested.
    * @return the record key of interest from {@link Row}.
    */
+  @Override
   @PublicAPIMethod(maturity = ApiMaturityLevel.EVOLVING)
   public String getRecordKey(Row row) {
     if (null == converterFn) {
@@ -84,6 +85,7 @@ public abstract class KeyGenerator implements Serializable, KeyGeneratorInterfac
    * @param row instance of {@link Row} from which partition path is requested
    * @return the partition path of interest from {@link Row}.
    */
+  @Override
   @PublicAPIMethod(maturity = ApiMaturityLevel.EVOLVING)
   public String getPartitionPath(Row row) {
     if (null == converterFn) {

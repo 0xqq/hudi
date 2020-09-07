@@ -86,7 +86,7 @@ public class TestHoodieKeyLocationFetchHandle extends HoodieClientTestHarness {
   public void testFetchHandle() throws Exception {
     List<HoodieRecord> records = dataGen.generateInserts(makeNewCommitTime(), 100);
     Map<String, List<HoodieRecord>> partitionRecordsMap = recordsToPartitionRecordsMap(records);
-    HoodieTable hoodieTable = HoodieTable.create(metaClient, config, jsc.hadoopConfiguration());
+    HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, AVRO_SCHEMA_WITH_METADATA_FIELDS);
     Map<Tuple2<String, String>, List<Tuple2<HoodieKey, HoodieRecordLocation>>> expectedList =
         writeToParquetAndGetExpectedRecordLocations(partitionRecordsMap, testTable);

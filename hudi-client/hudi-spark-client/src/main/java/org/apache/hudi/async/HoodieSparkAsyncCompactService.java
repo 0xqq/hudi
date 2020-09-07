@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.hudi.asyc;
+package org.apache.hudi.async;
 
+import org.apache.hudi.asyc.BaseAsyncCompactService;
 import org.apache.hudi.client.AbstractHoodieWriteClient;
 import org.apache.hudi.client.BaseCompactor;
 import org.apache.hudi.client.HoodieSparkCompactor;
