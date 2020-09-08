@@ -20,7 +20,7 @@ package org.apache.hudi.utilities.deltastreamer;
 
 import org.apache.hudi.AvroConversionUtils;
 import org.apache.hudi.DataSourceUtils;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.config.TypedProperties;
@@ -160,7 +160,7 @@ public class DeltaSync implements Serializable {
   /**
    * Callback when write client is instantiated.
    */
-  private transient Function<HoodieSparkWriteClient, Boolean> onInitializingHoodieWriteClient;
+  private transient Function<SparkRDDWriteClient, Boolean> onInitializingHoodieWriteClient;
 
   /**
    * Timeline with completed commits.
@@ -170,11 +170,11 @@ public class DeltaSync implements Serializable {
   /**
    * Write Client.
    */
-  private transient HoodieSparkWriteClient writeClient;
+  private transient SparkRDDWriteClient writeClient;
 
   public DeltaSync(HoodieDeltaStreamer.Config cfg, SparkSession sparkSession, SchemaProvider schemaProvider,
                    TypedProperties props, JavaSparkContext jssc, FileSystem fs, Configuration conf,
-                   Function<HoodieSparkWriteClient, Boolean> onInitializingHoodieWriteClient) throws IOException {
+                   Function<SparkRDDWriteClient, Boolean> onInitializingHoodieWriteClient) throws IOException {
 
     this.cfg = cfg;
     this.jssc = jssc;
@@ -542,7 +542,7 @@ public class DeltaSync implements Serializable {
     if ((null != schemaProvider) && (null == writeClient)) {
       registerAvroSchemas(schemaProvider);
       HoodieWriteConfig hoodieCfg = getHoodieClientConfig(schemaProvider);
-      writeClient = new HoodieSparkWriteClient<>(new HoodieSparkEngineContext(jssc), hoodieCfg, true);
+      writeClient = new SparkRDDWriteClient<>(new HoodieSparkEngineContext(jssc), hoodieCfg, true);
       onInitializingHoodieWriteClient.apply(writeClient);
     }
   }

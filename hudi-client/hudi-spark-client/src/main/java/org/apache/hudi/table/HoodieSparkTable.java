@@ -150,7 +150,7 @@ public abstract class HoodieSparkTable<T extends HoodieRecordPayload>
                                                                            HoodieTableMetaClient metaClient) {
     switch (metaClient.getTableType()) {
       case COPY_ON_WRITE:
-        return new HoodieSparkCopyOnWriteTable<T>(config, context, metaClient);
+        return new HoodieSparkCopyOnWriteTable<>(config, context, metaClient);
       case MERGE_ON_READ:
         return new HoodieSparkMergeOnReadTable<>(config, context, metaClient);
       default:

@@ -18,7 +18,7 @@
 
 package org.apache.hudi.table.action.rollback;
 
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.model.FileSlice;
 import org.apache.hudi.common.model.HoodieFileGroup;
@@ -50,7 +50,7 @@ public class HoodieClientRollbackTestBase extends HoodieClientTestBase {
     dataGen = new HoodieTestDataGenerator(new String[]{DEFAULT_FIRST_PARTITION_PATH, DEFAULT_SECOND_PARTITION_PATH});
     //1. prepare data
     HoodieTestDataGenerator.writePartitionMetadata(fs, new String[]{DEFAULT_FIRST_PARTITION_PATH, DEFAULT_SECOND_PARTITION_PATH}, basePath);
-    HoodieSparkWriteClient client = getHoodieWriteClient(cfg);
+    SparkRDDWriteClient client = getHoodieWriteClient(cfg);
     /**
      * Write 1 (only inserts)
      */

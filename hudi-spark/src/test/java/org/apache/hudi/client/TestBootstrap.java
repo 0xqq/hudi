@@ -250,7 +250,7 @@ public class TestBootstrap extends HoodieClientTestBase {
             .withBootstrapParallelism(3)
             .withBootstrapModeSelector(bootstrapModeSelectorClass).build())
         .build();
-    HoodieSparkWriteClient client = new HoodieSparkWriteClient(context, config);
+    SparkRDDWriteClient client = new SparkRDDWriteClient(context, config);
     client.bootstrap(Option.empty());
     checkBootstrapResults(totalRecords, schema, bootstrapCommitInstantTs, checkNumRawFiles, numInstantsAfterBootstrap,
         numInstantsAfterBootstrap, timestamp, timestamp, deltaCommit, bootstrapInstants);
@@ -268,7 +268,7 @@ public class TestBootstrap extends HoodieClientTestBase {
     assertFalse(index.useIndex());
 
     // Run bootstrap again
-    client = new HoodieSparkWriteClient(context, config);
+    client = new SparkRDDWriteClient(context, config);
     client.bootstrap(Option.empty());
 
     metaClient.reloadActiveTimeline();
@@ -474,8 +474,8 @@ public class TestBootstrap extends HoodieClientTestBase {
     }
 
     @Override
-    public JavaRDD<HoodieRecord> generateInputRecord(String tableName, String sourceBasePath,
-        List<Pair<String, List<HoodieFileStatus>>> partitionPaths) {
+    public JavaRDD<HoodieRecord> generateInputRecords(String tableName, String sourceBasePath,
+                                                      List<Pair<String, List<HoodieFileStatus>>> partitionPaths) {
       String filePath = FileStatusUtils.toPath(partitionPaths.stream().flatMap(p -> p.getValue().stream())
           .findAny().get().getPath()).toString();
       ParquetFileReader reader = null;

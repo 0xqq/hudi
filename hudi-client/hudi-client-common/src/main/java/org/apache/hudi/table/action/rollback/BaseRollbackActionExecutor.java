@@ -71,13 +71,13 @@ public abstract class BaseRollbackActionExecutor<T extends HoodieRecordPayload, 
   }
 
   public BaseRollbackActionExecutor(HoodieEngineContext context,
-      HoodieWriteConfig config,
-      HoodieTable<T, I, K, O, P> table,
-      String instantTime,
-      HoodieInstant instantToRollback,
-      boolean deleteInstants,
-      boolean skipTimelinePublish,
-      boolean useMarkerBasedStrategy) {
+                                    HoodieWriteConfig config,
+                                    HoodieTable<T, I, K, O, P> table,
+                                    String instantTime,
+                                    HoodieInstant instantToRollback,
+                                    boolean deleteInstants,
+                                    boolean skipTimelinePublish,
+                                    boolean useMarkerBasedStrategy) {
     super(context, config, table, instantTime);
     this.instantToRollback = instantToRollback;
     this.deleteInstants = deleteInstants;

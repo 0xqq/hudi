@@ -17,10 +17,10 @@
 package org.apache.hudi
 
 import java.lang
-import java.util.function.{Function}
+import java.util.function.Function
 
 import org.apache.hudi.async.SparkStreamingAsyncCompactService
-import org.apache.hudi.client.HoodieSparkWriteClient
+import org.apache.hudi.client.SparkRDDWriteClient
 import org.apache.hudi.common.HoodieSparkEngineContext
 import org.apache.hudi.common.model.HoodieRecordPayload
 import org.apache.hudi.common.table.{HoodieTableConfig, HoodieTableMetaClient}
@@ -61,7 +61,7 @@ class HoodieStreamingSink(sqlContext: SQLContext,
     }
 
   private var asyncCompactorService : SparkStreamingAsyncCompactService = _
-  private var writeClient : Option[HoodieSparkWriteClient[HoodieRecordPayload[Nothing]]] = Option.empty
+  private var writeClient : Option[SparkRDDWriteClient[HoodieRecordPayload[Nothing]]] = Option.empty
   private var hoodieTableConfig : Option[HoodieTableConfig] = Option.empty
 
   override def addBatch(batchId: Long, data: DataFrame): Unit = this.synchronized {
@@ -154,7 +154,7 @@ class HoodieStreamingSink(sqlContext: SQLContext,
     }
   }
 
-  protected def triggerAsyncCompactor(client: HoodieSparkWriteClient[HoodieRecordPayload[Nothing]]): Unit = {
+  protected def triggerAsyncCompactor(client: SparkRDDWriteClient[HoodieRecordPayload[Nothing]]): Unit = {
     if (null == asyncCompactorService) {
       log.info("Triggering Async compaction !!")
       asyncCompactorService = new SparkStreamingAsyncCompactService(new HoodieSparkEngineContext(new JavaSparkContext(sqlContext.sparkContext)),

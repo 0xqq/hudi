@@ -19,8 +19,6 @@
 
 package org.apache.hudi.index.hbase;
 
-import org.apache.hudi.index.hbase.BaseHoodieHBaseIndex.HBasePutBatchSizeCalculator;
-
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,7 +27,7 @@ public class TestHBasePutBatchSizeCalculator {
 
   @Test
   public void testPutBatchSizeCalculation() {
-    HBasePutBatchSizeCalculator batchSizeCalculator = new HBasePutBatchSizeCalculator();
+    SparkHoodieHBaseIndex.HBasePutBatchSizeCalculator batchSizeCalculator = new SparkHoodieHBaseIndex.HBasePutBatchSizeCalculator();
 
     // All asserts cases below are derived out of the first
     // example below, with change in one parameter at a time.

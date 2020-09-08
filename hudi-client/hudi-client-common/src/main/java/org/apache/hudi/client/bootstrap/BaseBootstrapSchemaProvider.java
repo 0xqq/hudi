@@ -63,6 +63,6 @@ public abstract class BaseBootstrapSchemaProvider {
    * @return Avro Schema
    */
   protected abstract Schema getBootstrapSourceSchema(HoodieEngineContext context,
-      List<Pair<String, List<HoodieFileStatus>>> partitions);
+                                                     List<Pair<String, List<HoodieFileStatus>>> partitions);
 
 }

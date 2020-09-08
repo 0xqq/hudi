@@ -36,7 +36,7 @@ public class TestHBaseQPSResourceAllocator {
   @Test
   public void testsDefaultQPSResourceAllocator() {
     HoodieWriteConfig config = getConfig(Option.empty());
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
     HBaseIndexQPSResourceAllocator hBaseIndexQPSResourceAllocator = index.createQPSResourceAllocator(config);
     assertEquals(hBaseIndexQPSResourceAllocator.getClass().getName(),
         DefaultHBaseQPSResourceAllocator.class.getName());
@@ -47,7 +47,7 @@ public class TestHBaseQPSResourceAllocator {
   @Test
   public void testsExplicitDefaultQPSResourceAllocator() {
     HoodieWriteConfig config = getConfig(Option.of(HoodieHBaseIndexConfig.DEFAULT_HBASE_INDEX_QPS_ALLOCATOR_CLASS));
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
     HBaseIndexQPSResourceAllocator hBaseIndexQPSResourceAllocator = index.createQPSResourceAllocator(config);
     assertEquals(hBaseIndexQPSResourceAllocator.getClass().getName(),
         DefaultHBaseQPSResourceAllocator.class.getName());
@@ -58,7 +58,7 @@ public class TestHBaseQPSResourceAllocator {
   @Test
   public void testsInvalidQPSResourceAllocator() {
     HoodieWriteConfig config = getConfig(Option.of("InvalidResourceAllocatorClassName"));
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
     HBaseIndexQPSResourceAllocator hBaseIndexQPSResourceAllocator = index.createQPSResourceAllocator(config);
     assertEquals(hBaseIndexQPSResourceAllocator.getClass().getName(),
         DefaultHBaseQPSResourceAllocator.class.getName());

@@ -60,7 +60,7 @@ public class TestClientRollback extends HoodieClientTestBase {
   public void testSavepointAndRollback() throws Exception {
     HoodieWriteConfig cfg = getConfigBuilder().withCompactionConfig(HoodieCompactionConfig.newBuilder()
         .withCleanerPolicy(HoodieCleaningPolicy.KEEP_LATEST_COMMITS).retainCommits(1).build()).build();
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg)) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg)) {
       HoodieTestDataGenerator.writePartitionMetadata(fs, HoodieTestDataGenerator.DEFAULT_PARTITION_PATHS, basePath);
 
       /**
@@ -191,7 +191,7 @@ public class TestClientRollback extends HoodieClientTestBase {
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath)
         .withIndexConfig(HoodieIndexConfig.newBuilder().withIndexType(HoodieIndex.IndexType.INMEMORY).build()).build();
 
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(config, false);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(config, false);) {
 
       // Rollback commit 1 (this should fail, since commit2 is still around)
       assertThrows(HoodieRollbackException.class, () -> {
@@ -281,7 +281,7 @@ public class TestClientRollback extends HoodieClientTestBase {
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath)
         .withIndexConfig(HoodieIndexConfig.newBuilder().withIndexType(HoodieIndex.IndexType.INMEMORY).build()).build();
 
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(config, false);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(config, false);) {
       client.startCommitWithTime(commitTime4);
       // Check results, nothing changed
       assertTrue(HoodieTestUtils.doesCommitExist(basePath, commitTime1));
@@ -299,7 +299,7 @@ public class TestClientRollback extends HoodieClientTestBase {
     }
 
     // Turn auto rollback on
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(config, true)) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(config, true)) {
       client.startCommitWithTime(commitTime5);
       assertTrue(HoodieTestUtils.doesCommitExist(basePath, commitTime1));
       assertFalse(HoodieTestUtils.doesInflightExist(basePath, commitTime2));

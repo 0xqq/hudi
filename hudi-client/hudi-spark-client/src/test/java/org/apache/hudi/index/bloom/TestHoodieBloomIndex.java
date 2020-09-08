@@ -102,7 +102,7 @@ public class TestHoodieBloomIndex extends HoodieClientTestHarness {
   @MethodSource("configParams")
   public void testLoadInvolvedFiles(boolean rangePruning, boolean treeFiltering, boolean bucketizedChecking) throws Exception {
     HoodieWriteConfig config = makeConfig(rangePruning, treeFiltering, bucketizedChecking);
-    HoodieSparkBloomIndex index = new HoodieSparkBloomIndex(config);
+    SparkHoodieBloomIndex index = new SparkHoodieBloomIndex(config);
     HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
 
@@ -166,7 +166,7 @@ public class TestHoodieBloomIndex extends HoodieClientTestHarness {
   @MethodSource("configParams")
   public void testRangePruning(boolean rangePruning, boolean treeFiltering, boolean bucketizedChecking) {
     HoodieWriteConfig config = makeConfig(rangePruning, treeFiltering, bucketizedChecking);
-    HoodieSparkBloomIndex index = new HoodieSparkBloomIndex(config);
+    SparkHoodieBloomIndex index = new SparkHoodieBloomIndex(config);
 
     final Map<String, List<BloomIndexFileInfo>> partitionToFileIndexInfo = new HashMap<>();
     partitionToFileIndexInfo.put("2017/10/22",
@@ -261,7 +261,7 @@ public class TestHoodieBloomIndex extends HoodieClientTestHarness {
     HoodieSparkTable table = HoodieSparkTable.create(config, context, metaClient);
 
     // Let's tag
-    HoodieSparkBloomIndex bloomIndex = new HoodieSparkBloomIndex(config);
+    SparkHoodieBloomIndex bloomIndex = new SparkHoodieBloomIndex(config);
 
     assertDoesNotThrow(() -> {
       bloomIndex.tagLocation(recordRDD, context, table);
@@ -300,7 +300,7 @@ public class TestHoodieBloomIndex extends HoodieClientTestHarness {
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
 
     // Let's tag
-    HoodieSparkBloomIndex bloomIndex = new HoodieSparkBloomIndex(config);
+    SparkHoodieBloomIndex bloomIndex = new SparkHoodieBloomIndex(config);
     JavaRDD<HoodieRecord> taggedRecordRDD = bloomIndex.tagLocation(recordRDD, context, hoodieTable);
 
     // Should not find any files
@@ -365,7 +365,7 @@ public class TestHoodieBloomIndex extends HoodieClientTestHarness {
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
 
     // Let's tag
-    HoodieSparkBloomIndex bloomIndex = new HoodieSparkBloomIndex(config);
+    SparkHoodieBloomIndex bloomIndex = new SparkHoodieBloomIndex(config);
     JavaPairRDD<HoodieKey, Option<Pair<String, String>>> taggedRecordRDD =
         bloomIndex.fetchRecordLocation(keysRDD, context, hoodieTable);
 
@@ -433,7 +433,7 @@ public class TestHoodieBloomIndex extends HoodieClientTestHarness {
     metaClient = HoodieTableMetaClient.reload(metaClient);
     HoodieSparkTable table = HoodieSparkTable.create(config, context, metaClient);
 
-    HoodieSparkBloomIndex bloomIndex = new HoodieSparkBloomIndex(config);
+    SparkHoodieBloomIndex bloomIndex = new SparkHoodieBloomIndex(config);
     JavaRDD<HoodieRecord> taggedRecordRDD = bloomIndex.tagLocation(recordRDD, context, table);
 
     // Check results

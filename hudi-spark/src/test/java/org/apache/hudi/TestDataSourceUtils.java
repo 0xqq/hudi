@@ -19,7 +19,7 @@
 package org.apache.hudi;
 
 import org.apache.hudi.avro.HoodieAvroUtils;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.model.HoodieRecordPayload;
 import org.apache.hudi.common.model.WriteOperationType;
@@ -59,7 +59,7 @@ import static org.mockito.Mockito.when;
 public class TestDataSourceUtils {
 
   @Mock
-  private HoodieSparkWriteClient hoodieWriteClient;
+  private SparkRDDWriteClient hoodieWriteClient;
 
   @Mock
   private JavaRDD<HoodieRecord> hoodieRecords;

@@ -27,7 +27,6 @@ import org.apache.hudi.common.model.HoodieRecordPayload;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.exception.HoodieIndexException;
 import org.apache.hudi.table.HoodieTable;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -37,24 +36,43 @@ import org.apache.spark.api.java.function.Function2;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Spark implementation of hoodie index backed by an in-memory Hash map.
  * <p>
  * ONLY USE FOR LOCAL TESTING
  */
-public class SparkInMemoryHashIndex<T extends HoodieRecordPayload> extends BaseInMemoryHashIndex<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> {
+public class SparkInMemoryHashIndex<T extends HoodieRecordPayload> extends SparkHoodieIndex<T> {
+
+  private static ConcurrentMap<HoodieKey, HoodieRecordLocation> recordLocationMap;
+
   public SparkInMemoryHashIndex(HoodieWriteConfig config) {
     super(config);
+    synchronized (SparkInMemoryHashIndex.class) {
+      if (recordLocationMap == null) {
+        recordLocationMap = new ConcurrentHashMap<>();
+      }
+    }
   }
 
   @Override
-  public JavaRDD<HoodieRecord<T>> tagLocation(JavaRDD<HoodieRecord<T>> recordRDD, HoodieEngineContext context, HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> hoodieTable) throws HoodieIndexException {
+  public JavaPairRDD<HoodieKey, Option<Pair<String, String>>> fetchRecordLocation(JavaRDD<HoodieKey> hoodieKeys,
+                                                                                  HoodieEngineContext context,
+                                                                                  HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> hoodieTable) {
+    throw new UnsupportedOperationException("InMemory index does not implement check exist yet");
+  }
+
+  @Override
+  public JavaRDD<HoodieRecord<T>> tagLocation(JavaRDD<HoodieRecord<T>> recordRDD, HoodieEngineContext context,
+                                              HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> hoodieTable) {
     return recordRDD.mapPartitionsWithIndex(this.new LocationTagFunction(), true);
   }
 
   @Override
-  public JavaRDD<WriteStatus> updateLocation(JavaRDD<WriteStatus> writeStatusRDD, HoodieEngineContext context, HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> hoodieTable) throws HoodieIndexException {
+  public JavaRDD<WriteStatus> updateLocation(JavaRDD<WriteStatus> writeStatusRDD, HoodieEngineContext context,
+                                             HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> hoodieTable) {
     return writeStatusRDD.map(new Function<WriteStatus, WriteStatus>() {
       @Override
       public WriteStatus call(WriteStatus writeStatus) {
@@ -73,7 +91,35 @@ public class SparkInMemoryHashIndex<T extends HoodieRecordPayload> extends BaseI
         return writeStatus;
       }
     });
+  }
 
+  @Override
+  public boolean rollbackCommit(String instantTime) {
+    return true;
+  }
+
+  /**
+   * Only looks up by recordKey.
+   */
+  @Override
+  public boolean isGlobal() {
+    return true;
+  }
+
+  /**
+   * Mapping is available in HBase already.
+   */
+  @Override
+  public boolean canIndexLogFiles() {
+    return true;
+  }
+
+  /**
+   * Index needs to be explicitly updated after storage write.
+   */
+  @Override
+  public boolean isImplicitWithStorage() {
+    return false;
   }
 
   /**
@@ -96,5 +142,4 @@ public class SparkInMemoryHashIndex<T extends HoodieRecordPayload> extends BaseI
       return taggedRecords.iterator();
     }
   }
-
 }

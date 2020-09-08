@@ -18,10 +18,10 @@
 
 package org.apache.hudi.utilities.deltastreamer;
 
-import org.apache.hudi.asyc.AbstractAsyncService;
-import org.apache.hudi.asyc.BaseAsyncCompactService;
+import org.apache.hudi.async.AbstractAsyncService;
+import org.apache.hudi.async.BaseAsyncCompactService;
 import org.apache.hudi.async.HoodieSparkAsyncCompactService;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.bootstrap.index.HFileBootstrapIndex;
@@ -621,7 +621,7 @@ public class HoodieDeltaStreamer implements Serializable {
      * @param writeClient HoodieWriteClient
      * @return
      */
-    protected Boolean onInitializingWriteClient(HoodieSparkWriteClient writeClient) {
+    protected Boolean onInitializingWriteClient(SparkRDDWriteClient writeClient) {
       if (cfg.isAsyncCompactionEnabled()) {
         asyncCompactService = new HoodieSparkAsyncCompactService(new HoodieSparkEngineContext(jssc), writeClient);
         // Enqueue existing pending compactions first

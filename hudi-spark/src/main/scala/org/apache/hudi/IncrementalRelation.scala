@@ -64,7 +64,8 @@ class IncrementalRelation(val sqlContext: SQLContext,
     throw new HoodieException("Incremental view not implemented yet, for merge-on-read tables")
   }
   // TODO : Figure out a valid HoodieWriteConfig
-  private val hoodieTable = HoodieSparkTable.create(HoodieWriteConfig.newBuilder().withPath(basePath).build(), new HoodieSparkEngineContext(new JavaSparkContext(sqlContext.sparkContext)) ,metaClient)
+  private val hoodieTable = HoodieSparkTable.create(HoodieWriteConfig.newBuilder().withPath(basePath).build(),
+    new HoodieSparkEngineContext(new JavaSparkContext(sqlContext.sparkContext)), metaClient)
   private val commitTimeline = hoodieTable.getMetaClient.getCommitTimeline.filterCompletedInstants()
   if (commitTimeline.empty()) {
     throw new HoodieException("No instants to incrementally pull")

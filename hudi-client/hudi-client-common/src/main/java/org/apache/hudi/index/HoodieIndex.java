@@ -47,7 +47,6 @@ public abstract class HoodieIndex<T extends HoodieRecordPayload, I, K, O, P> imp
    * Checks if the given [Keys] exists in the hoodie table and returns [Key, Option[partitionPath, fileID]] If the
    * optional is empty, then the key is not found.
    */
-  @PublicAPIMethod(maturity = ApiMaturityLevel.STABLE)
   public abstract P fetchRecordLocation(
       K hoodieKeys, final HoodieEngineContext context, HoodieTable<T, I, K, O, P> hoodieTable);
 

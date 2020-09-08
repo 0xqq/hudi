@@ -18,7 +18,7 @@
 package org.apache.hudi.testutils;
 
 import org.apache.hudi.client.HoodieReadClient;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.SparkTaskContextSupplier;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.fs.FSUtils;
@@ -68,7 +68,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
   protected transient ExecutorService executorService;
   protected transient HoodieTableMetaClient metaClient;
   private static AtomicInteger instantGen = new AtomicInteger(1);
-  protected transient HoodieSparkWriteClient writeClient;
+  protected transient SparkRDDWriteClient writeClient;
   protected transient HoodieReadClient readClient;
   protected transient HoodieTableFileSystemView tableView;
 
@@ -319,7 +319,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
     }
   }
 
-  public HoodieSparkWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) {
+  public SparkRDDWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) {
     return getHoodieWriteClient(cfg, false);
   }
 
@@ -328,12 +328,12 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
     return readClient;
   }
 
-  public HoodieSparkWriteClient getHoodieWriteClient(HoodieWriteConfig cfg, boolean rollbackInflightCommit) {
+  public SparkRDDWriteClient getHoodieWriteClient(HoodieWriteConfig cfg, boolean rollbackInflightCommit) {
     if (null != writeClient) {
       writeClient.close();
       writeClient = null;
     }
-    writeClient = new HoodieSparkWriteClient(context, cfg, rollbackInflightCommit);
+    writeClient = new SparkRDDWriteClient(context, cfg, rollbackInflightCommit);
     return writeClient;
   }
 

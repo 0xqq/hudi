@@ -73,7 +73,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
   @Test
   public void testLoadInvolvedFiles() throws Exception {
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath).build();
-    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
+    SparkHoodieGlobalBloomIndex index = new SparkHoodieGlobalBloomIndex(config);
     HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
 
@@ -137,7 +137,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
   public void testExplodeRecordRDDWithFileComparisons() {
 
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath).build();
-    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
+    SparkHoodieGlobalBloomIndex index = new SparkHoodieGlobalBloomIndex(config);
 
     final Map<String, List<BloomIndexFileInfo>> partitionToFileIndexInfo = new HashMap<>();
     partitionToFileIndexInfo.put("2017/10/22", Arrays.asList(new BloomIndexFileInfo("f1"),
@@ -177,7 +177,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
   @Test
   public void testTagLocation() throws Exception {
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath).build();
-    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
+    SparkHoodieGlobalBloomIndex index = new SparkHoodieGlobalBloomIndex(config);
     HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
 
@@ -258,7 +258,7 @@ public class TestHoodieGlobalBloomIndex extends HoodieClientTestHarness {
         .withPath(basePath)
         .withIndexConfig(HoodieIndexConfig.newBuilder().withBloomIndexUpdatePartitionPath(true).build())
         .build();
-    HoodieSparkGlobalBloomIndex index = new HoodieSparkGlobalBloomIndex(config);
+    SparkHoodieGlobalBloomIndex index = new SparkHoodieGlobalBloomIndex(config);
     HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
     HoodieWriteableTestTable testTable = HoodieWriteableTestTable.of(hoodieTable, SCHEMA);
     final String p1 = "2016/01/31";

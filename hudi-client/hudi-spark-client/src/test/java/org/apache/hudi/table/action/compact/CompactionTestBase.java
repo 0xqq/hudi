@@ -21,7 +21,7 @@ package org.apache.hudi.table.action.compact;
 import org.apache.hudi.avro.model.HoodieCompactionOperation;
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.client.HoodieReadClient;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.model.FileSlice;
 import org.apache.hudi.common.model.HoodieBaseFile;
@@ -102,7 +102,7 @@ public class CompactionTestBase extends HoodieClientTestBase {
     });
   }
 
-  protected List<HoodieRecord> runNextDeltaCommits(HoodieSparkWriteClient client, final HoodieReadClient readClient, List<String> deltaInstants,
+  protected List<HoodieRecord> runNextDeltaCommits(SparkRDDWriteClient client, final HoodieReadClient readClient, List<String> deltaInstants,
                                                    List<HoodieRecord> records, HoodieWriteConfig cfg, boolean insertFirst, List<String> expPendingCompactionInstants)
       throws Exception {
 
@@ -155,21 +155,21 @@ public class CompactionTestBase extends HoodieClientTestBase {
     assertTrue(instant.isInflight(), "Instant must be marked inflight");
   }
 
-  protected void scheduleCompaction(String compactionInstantTime, HoodieSparkWriteClient client, HoodieWriteConfig cfg) {
+  protected void scheduleCompaction(String compactionInstantTime, SparkRDDWriteClient client, HoodieWriteConfig cfg) {
     client.scheduleCompactionAtInstant(compactionInstantTime, Option.empty());
     HoodieTableMetaClient metaClient = new HoodieTableMetaClient(hadoopConf, cfg.getBasePath());
     HoodieInstant instant = metaClient.getActiveTimeline().filterPendingCompactionTimeline().lastInstant().get();
     assertEquals(compactionInstantTime, instant.getTimestamp(), "Last compaction instant must be the one set");
   }
 
-  protected void scheduleAndExecuteCompaction(String compactionInstantTime, HoodieSparkWriteClient client, HoodieTable table,
-                                            HoodieWriteConfig cfg, int expectedNumRecs, boolean hasDeltaCommitAfterPendingCompaction) throws IOException {
+  protected void scheduleAndExecuteCompaction(String compactionInstantTime, SparkRDDWriteClient client, HoodieTable table,
+                                              HoodieWriteConfig cfg, int expectedNumRecs, boolean hasDeltaCommitAfterPendingCompaction) throws IOException {
     scheduleCompaction(compactionInstantTime, client, cfg);
     executeCompaction(compactionInstantTime, client, table, cfg, expectedNumRecs, hasDeltaCommitAfterPendingCompaction);
   }
 
-  protected void executeCompaction(String compactionInstantTime, HoodieSparkWriteClient client, HoodieTable table,
-                                 HoodieWriteConfig cfg, int expectedNumRecs, boolean hasDeltaCommitAfterPendingCompaction) throws IOException {
+  protected void executeCompaction(String compactionInstantTime, SparkRDDWriteClient client, HoodieTable table,
+                                   HoodieWriteConfig cfg, int expectedNumRecs, boolean hasDeltaCommitAfterPendingCompaction) throws IOException {
 
     client.compact(compactionInstantTime);
     List<FileSlice> fileSliceList = getCurrentLatestFileSlices(table);
@@ -200,7 +200,7 @@ public class CompactionTestBase extends HoodieClientTestBase {
 
   }
 
-  protected List<WriteStatus> createNextDeltaCommit(String instantTime, List<HoodieRecord> records, HoodieSparkWriteClient client,
+  protected List<WriteStatus> createNextDeltaCommit(String instantTime, List<HoodieRecord> records, SparkRDDWriteClient client,
                                                     HoodieTableMetaClient metaClient, HoodieWriteConfig cfg, boolean skipCommit) {
     JavaRDD<HoodieRecord> writeRecords = jsc.parallelize(records, 1);
 

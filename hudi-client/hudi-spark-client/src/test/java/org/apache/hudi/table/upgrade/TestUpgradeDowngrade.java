@@ -18,7 +18,7 @@
 
 package org.apache.hudi.table.upgrade;
 
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.model.FileSlice;
 import org.apache.hudi.common.model.HoodieFileGroup;
@@ -102,7 +102,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
       metaClient = HoodieTestUtils.init(hadoopConf, basePath, HoodieTableType.MERGE_ON_READ);
     }
     HoodieWriteConfig cfg = getConfigBuilder().withAutoCommit(false).withRollbackUsingMarkers(false).withProps(params).build();
-    HoodieSparkWriteClient client = getHoodieWriteClient(cfg);
+    SparkRDDWriteClient client = getHoodieWriteClient(cfg);
 
     // prepare data. Make 2 commits, in which 2nd is not committed.
     List<FileSlice> firstPartitionCommit2FileSlices = new ArrayList<>();
@@ -158,7 +158,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
       metaClient = HoodieTestUtils.init(hadoopConf, basePath, HoodieTableType.MERGE_ON_READ);
     }
     HoodieWriteConfig cfg = getConfigBuilder().withAutoCommit(false).withRollbackUsingMarkers(false).withProps(params).build();
-    HoodieSparkWriteClient client = getHoodieWriteClient(cfg);
+    SparkRDDWriteClient client = getHoodieWriteClient(cfg);
 
     // prepare data. Make 2 commits, in which 2nd is not committed.
     List<FileSlice> firstPartitionCommit2FileSlices = new ArrayList<>();
@@ -277,7 +277,7 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
       params.put(HOODIE_TABLE_TYPE_PROP_NAME, HoodieTableType.MERGE_ON_READ.name());
     }
     HoodieWriteConfig cfg = getConfigBuilder().withAutoCommit(false).withRollbackUsingMarkers(enableMarkedBasedRollback).withProps(params).build();
-    HoodieSparkWriteClient client = getHoodieWriteClient(cfg, true);
+    SparkRDDWriteClient client = getHoodieWriteClient(cfg, true);
 
     client.startCommitWithTime(newCommitTime);
 
@@ -322,13 +322,13 @@ public class TestUpgradeDowngrade extends HoodieClientTestBase {
    * @param firstPartitionCommit2FileSlices list to hold file slices in first partition.
    * @param secondPartitionCommit2FileSlices list of hold file slices from second partition.
    * @param cfg instance of {@link HoodieWriteConfig}
-   * @param client instance of {@link HoodieSparkWriteClient} to use.
+   * @param client instance of {@link SparkRDDWriteClient} to use.
    * @param commitSecondUpsert true if 2nd commit needs to be committed. false otherwise.
    * @return a pair of list of records from 1st and 2nd batch.
    */
   private Pair<List<HoodieRecord>, List<HoodieRecord>> twoUpsertCommitDataWithTwoPartitions(List<FileSlice> firstPartitionCommit2FileSlices,
       List<FileSlice> secondPartitionCommit2FileSlices,
-      HoodieWriteConfig cfg, HoodieSparkWriteClient client,
+      HoodieWriteConfig cfg, SparkRDDWriteClient client,
       boolean commitSecondUpsert) throws IOException {
     //just generate two partitions
     dataGen = new HoodieTestDataGenerator(new String[] {DEFAULT_FIRST_PARTITION_PATH, DEFAULT_SECOND_PARTITION_PATH});

@@ -18,7 +18,7 @@
 
 package org.apache.hudi.index.hbase;
 
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.model.HoodieTableType;
@@ -136,8 +136,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config);) {
       metaClient = HoodieTableMetaClient.reload(metaClient);
       HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
@@ -176,8 +176,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
-    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
+    SparkRDDWriteClient writeClient = getHoodieWriteClient(config);
     writeClient.startCommitWithTime(newCommitTime);
     metaClient = HoodieTableMetaClient.reload(metaClient);
     HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
@@ -210,8 +210,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   public void testSimpleTagLocationAndUpdateWithRollback() throws Exception {
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
-    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
+    SparkRDDWriteClient writeClient = getHoodieWriteClient(config);
 
     final String newCommitTime = writeClient.startCommit();
     final int numRecords = 10;
@@ -251,7 +251,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testTotalGetsBatching() throws Exception {
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
 
     // Mock hbaseConnection and related entities
     Connection hbaseConnection = mock(Connection.class);
@@ -262,7 +262,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
     // only for test, set the hbaseConnection to mocked object
     index.setHbaseConnection(hbaseConnection);
 
-    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
+    SparkRDDWriteClient writeClient = getHoodieWriteClient(config);
 
     // start a commit and generate test data
     String newCommitTime = writeClient.startCommit();
@@ -286,8 +286,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testTotalPutsBatching() throws Exception {
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
-    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
+    SparkRDDWriteClient writeClient = getHoodieWriteClient(config);
 
     // start a commit and generate test data
     String newCommitTime = writeClient.startCommit();
@@ -323,7 +323,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testsHBasePutAccessParallelism() {
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
     final JavaRDD<WriteStatus> writeStatusRDD = jsc().parallelize(
         Arrays.asList(getSampleWriteStatus(1, 2), getSampleWriteStatus(0, 3), getSampleWriteStatus(10, 0)), 10);
     final Tuple2<Long, Integer> tuple = index.getHBasePutAccessParallelism(writeStatusRDD);
@@ -337,7 +337,7 @@ public class TestHBaseIndex extends FunctionalTestHarness {
   @Test
   public void testsHBasePutAccessParallelismWithNoInserts() {
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
     final JavaRDD<WriteStatus> writeStatusRDD =
         jsc().parallelize(Arrays.asList(getSampleWriteStatus(0, 2), getSampleWriteStatus(0, 1)), 10);
     final Tuple2<Long, Integer> tuple = index.getHBasePutAccessParallelism(writeStatusRDD);
@@ -357,8 +357,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig(2);
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config);) {
       metaClient = HoodieTableMetaClient.reload(metaClient);
       HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 
@@ -397,8 +397,8 @@ public class TestHBaseIndex extends FunctionalTestHarness {
 
     // Load to memory
     HoodieWriteConfig config = getConfig();
-    HoodieSparkHBaseIndex index = new HoodieSparkHBaseIndex(config);
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
+    SparkHoodieHBaseIndex index = new SparkHoodieHBaseIndex(config);
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config);) {
       metaClient = HoodieTableMetaClient.reload(metaClient);
       HoodieSparkTable hoodieTable = HoodieSparkTable.create(config, context, metaClient);
 

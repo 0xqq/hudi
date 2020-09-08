@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hudi.asyc;
+package org.apache.hudi.async;
 
 import org.apache.hudi.client.AbstractHoodieWriteClient;
 import org.apache.hudi.client.BaseCompactor;
@@ -37,11 +37,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class BaseAsyncCompactService extends AbstractAsyncService {
   private static final long serialVersionUID = 1L;
   private static final Logger LOG = LogManager.getLogger(BaseAsyncCompactService.class);
-
-  /**
-   * This is the job pool used by async compaction.
-   */
-  public static final String COMPACT_POOL_NAME = "hoodiecompact";
 
   protected final int maxConcurrentCompaction;
   protected transient BaseCompactor compactor;

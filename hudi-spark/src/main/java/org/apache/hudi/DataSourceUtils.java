@@ -19,7 +19,7 @@
 package org.apache.hudi;
 
 import org.apache.hudi.client.HoodieReadClient;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.config.TypedProperties;
@@ -244,13 +244,13 @@ public class DataSourceUtils {
         .withProps(parameters).build();
   }
 
-  public static HoodieSparkWriteClient createHoodieClient(JavaSparkContext jssc, String schemaStr, String basePath,
-                                                          String tblName, Map<String, String> parameters) {
-    return new HoodieSparkWriteClient<>(new HoodieSparkEngineContext(jssc), createHoodieConfig(schemaStr, basePath, tblName, parameters), true);
+  public static SparkRDDWriteClient createHoodieClient(JavaSparkContext jssc, String schemaStr, String basePath,
+                                                       String tblName, Map<String, String> parameters) {
+    return new SparkRDDWriteClient<>(new HoodieSparkEngineContext(jssc), createHoodieConfig(schemaStr, basePath, tblName, parameters), true);
   }
 
-  public static JavaRDD<WriteStatus> doWriteOperation(HoodieSparkWriteClient client, JavaRDD<HoodieRecord> hoodieRecords,
-      String instantTime, WriteOperationType operation) throws HoodieException {
+  public static JavaRDD<WriteStatus> doWriteOperation(SparkRDDWriteClient client, JavaRDD<HoodieRecord> hoodieRecords,
+                                                      String instantTime, WriteOperationType operation) throws HoodieException {
     switch (operation) {
       case BULK_INSERT:
         Option<BulkInsertPartitioner> userDefinedBulkInsertPartitioner =
@@ -265,8 +265,8 @@ public class DataSourceUtils {
     }
   }
 
-  public static JavaRDD<WriteStatus> doDeleteOperation(HoodieSparkWriteClient client, JavaRDD<HoodieKey> hoodieKeys,
-      String instantTime) {
+  public static JavaRDD<WriteStatus> doDeleteOperation(SparkRDDWriteClient client, JavaRDD<HoodieKey> hoodieKeys,
+                                                       String instantTime) {
     return (JavaRDD<WriteStatus>) client.delete(hoodieKeys, instantTime);
   }
 

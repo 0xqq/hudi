@@ -40,7 +40,7 @@ import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieNotSupportedException;
 import org.apache.hudi.exception.HoodieUpsertException;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.index.HoodieSparkIndexFactory;
+import org.apache.hudi.index.SparkHoodieIndex;
 import org.apache.hudi.io.HoodieSortedMergeHandle;
 import org.apache.hudi.io.HoodieSparkCreateHandle;
 import org.apache.hudi.io.HoodieSparkMergeHandle;
@@ -116,7 +116,7 @@ public class HoodieSparkCopyOnWriteTable<T extends HoodieRecordPayload> extends 
 
   @Override
   public HoodieIndex<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> getIndex(HoodieWriteConfig config) {
-    return HoodieSparkIndexFactory.createIndex(config);
+    return SparkHoodieIndex.createIndex(config);
   }
 
   @Override

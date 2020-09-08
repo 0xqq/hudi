@@ -52,6 +52,6 @@ public abstract class FullRecordBootstrapDataProvider<I> implements Serializable
    * @param partitionPaths Partition Paths
    * @return input records
    */
-  public abstract I generateInputRecord(String tableName,
-      String sourceBasePath, List<Pair<String, List<HoodieFileStatus>>> partitionPaths);
+  public abstract I generateInputRecords(String tableName,
+                                         String sourceBasePath, List<Pair<String, List<HoodieFileStatus>>> partitionPaths);
 }

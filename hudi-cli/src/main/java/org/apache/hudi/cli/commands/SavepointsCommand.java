@@ -23,7 +23,7 @@ import org.apache.hudi.cli.HoodiePrintHelper;
 import org.apache.hudi.cli.HoodieTableHeaderFields;
 import org.apache.hudi.cli.utils.InputStreamConsumer;
 import org.apache.hudi.cli.utils.SparkUtil;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.timeline.HoodieActiveTimeline;
@@ -163,10 +163,10 @@ public class SavepointsCommand implements CommandMarker {
     return String.format("Savepoint \"%s\" deleted.", instantTime);
   }
 
-  private static HoodieSparkWriteClient createHoodieClient(JavaSparkContext jsc, String basePath) throws Exception {
+  private static SparkRDDWriteClient createHoodieClient(JavaSparkContext jsc, String basePath) throws Exception {
     HoodieWriteConfig config = HoodieWriteConfig.newBuilder().withPath(basePath)
         .withIndexConfig(HoodieIndexConfig.newBuilder().withIndexType(HoodieIndex.IndexType.BLOOM).build()).build();
-    return new HoodieSparkWriteClient(new HoodieSparkEngineContext(jsc), config, false);
+    return new SparkRDDWriteClient(new HoodieSparkEngineContext(jsc), config, false);
   }
 
 }

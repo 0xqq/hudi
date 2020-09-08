@@ -133,12 +133,12 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
         metaClient.getArchivePath(), metaClient.getTableConfig().getPayloadClass(), VERSION_1);
 
     HoodieWriteConfig hoodieWriteConfig = getWriteConfig(TRIP_EXAMPLE_SCHEMA);
-    HoodieSparkWriteClient client = getHoodieWriteClient(hoodieWriteConfig, false);
+    SparkRDDWriteClient client = getHoodieWriteClient(hoodieWriteConfig, false);
 
     // Initial inserts with TRIP_EXAMPLE_SCHEMA
     int numRecords = 10;
     insertFirstBatch(hoodieWriteConfig, client, "001", initCommitTime,
-                     numRecords, HoodieSparkWriteClient::insert, false, false, numRecords);
+                     numRecords, SparkRDDWriteClient::insert, false, false, numRecords);
     checkLatestDeltaCommit("001");
 
     // Compact once so we can incrementally read later
@@ -148,7 +148,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // Updates with same schema is allowed
     final int numUpdateRecords = 5;
     updateBatch(hoodieWriteConfig, client, "003", "002", Option.empty(),
-                initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, false, 0, 0, 0);
+                initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, false, 0, 0, 0);
     checkLatestDeltaCommit("003");
     checkReadRecords("000", numRecords);
 
@@ -156,7 +156,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     final int numDeleteRecords = 2;
     numRecords -= numDeleteRecords;
     deleteBatch(hoodieWriteConfig, client, "004", "003", initCommitTime, numDeleteRecords,
-        HoodieSparkWriteClient::delete, false, false, 0, 0);
+        SparkRDDWriteClient::delete, false, false, 0, 0);
     checkLatestDeltaCommit("004");
     checkReadRecords("000", numRecords);
 
@@ -168,7 +168,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
       // We cannot use insertBatch directly here because we want to insert records
       // with a devolved schema and insertBatch inserts records using the TRIP_EXMPLE_SCHEMA.
       writeBatch(client, "005", "004", Option.empty(), "003", numRecords,
-          (String s, Integer a) -> failedRecords, HoodieSparkWriteClient::insert, false, 0, 0, 0);
+          (String s, Integer a) -> failedRecords, SparkRDDWriteClient::insert, false, 0, 0, 0);
       fail("Insert with devolved scheme should fail");
     } catch (HoodieInsertException ex) {
       // no new commit
@@ -180,7 +180,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // Update with devolved schema is also not allowed
     try {
       updateBatch(hoodieDevolvedWriteConfig, client, "005", "004", Option.empty(),
-                  initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, false, 0, 0, 0);
+                  initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, false, 0, 0, 0);
       fail("Update with devolved scheme should fail");
     } catch (HoodieUpsertException ex) {
       // no new commit
@@ -197,7 +197,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // with a evolved schemaand insertBatch inserts records using the TRIP_EXMPLE_SCHEMA.
     final List<HoodieRecord> evolvedRecords = generateInsertsWithSchema("005", numRecords, TRIP_EXAMPLE_SCHEMA_EVOLVED);
     writeBatch(client, "005", "004", Option.empty(), initCommitTime, numRecords,
-        (String s, Integer a) -> evolvedRecords, HoodieSparkWriteClient::insert, false, 0, 0, 0);
+        (String s, Integer a) -> evolvedRecords, SparkRDDWriteClient::insert, false, 0, 0, 0);
 
     // new commit
     checkLatestDeltaCommit("005");
@@ -206,7 +206,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // Updates with evolved schema is allowed
     final List<HoodieRecord> updateRecords = generateUpdatesWithSchema("006", numUpdateRecords, TRIP_EXAMPLE_SCHEMA_EVOLVED);
     writeBatch(client, "006", "005", Option.empty(), initCommitTime,
-        numUpdateRecords, (String s, Integer a) -> updateRecords, HoodieSparkWriteClient::upsert, false, 0, 0, 0);
+        numUpdateRecords, (String s, Integer a) -> updateRecords, SparkRDDWriteClient::upsert, false, 0, 0, 0);
     // new commit
     checkLatestDeltaCommit("006");
     checkReadRecords("000", 2 * numRecords);
@@ -216,7 +216,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     client = getHoodieWriteClient(hoodieWriteConfig, false);
     try {
       updateBatch(hoodieWriteConfig, client, "007", "006", Option.empty(),
-                  initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, false, 0, 0, 0);
+                  initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, false, 0, 0, 0);
       fail("Update with original scheme should fail");
     } catch (HoodieUpsertException ex) {
       // no new commit
@@ -234,7 +234,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
       failedRecords.clear();
       failedRecords.addAll(dataGen.generateInserts("007", numRecords));
       writeBatch(client, "007", "006", Option.empty(), initCommitTime, numRecords,
-          (String s, Integer a) -> failedRecords, HoodieSparkWriteClient::insert, true, numRecords, numRecords, 1);
+          (String s, Integer a) -> failedRecords, SparkRDDWriteClient::insert, true, numRecords, numRecords, 1);
       fail("Insert with original scheme should fail");
     } catch (HoodieInsertException ex) {
       // no new commit
@@ -258,13 +258,13 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // Updates with original schema are now allowed
     client = getHoodieWriteClient(hoodieWriteConfig, false);
     updateBatch(hoodieWriteConfig, client, "008", "004", Option.empty(),
-                initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, false, 0, 0, 0);
+                initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, false, 0, 0, 0);
     // new commit
     checkLatestDeltaCommit("008");
     checkReadRecords("000", 2 * numRecords);
 
     // Insert with original schema is allowed now
-    insertBatch(hoodieWriteConfig, client, "009", "008", numRecords, HoodieSparkWriteClient::insert,
+    insertBatch(hoodieWriteConfig, client, "009", "008", numRecords, SparkRDDWriteClient::insert,
         false, false, 0, 0, 0);
     checkLatestDeltaCommit("009");
     checkReadRecords("000", 3 * numRecords);
@@ -278,18 +278,18 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
         metaClient.getArchivePath(), metaClient.getTableConfig().getPayloadClass(), VERSION_1);
 
     HoodieWriteConfig hoodieWriteConfig = getWriteConfig(TRIP_EXAMPLE_SCHEMA);
-    HoodieSparkWriteClient client = getHoodieWriteClient(hoodieWriteConfig, false);
+    SparkRDDWriteClient client = getHoodieWriteClient(hoodieWriteConfig, false);
 
     // Initial inserts with TRIP_EXAMPLE_SCHEMA
     int numRecords = 10;
     insertFirstBatch(hoodieWriteConfig, client, "001", initCommitTime,
-                     numRecords, HoodieSparkWriteClient::insert, false, true, numRecords);
+                     numRecords, SparkRDDWriteClient::insert, false, true, numRecords);
     checkReadRecords("000", numRecords);
 
     // Updates with same schema is allowed
     final int numUpdateRecords = 5;
     updateBatch(hoodieWriteConfig, client, "002", "001", Option.empty(),
-                initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, true,
+                initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, true,
                 numUpdateRecords, numRecords, 2);
     checkReadRecords("000", numRecords);
 
@@ -297,7 +297,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     final int numDeleteRecords = 2;
     numRecords -= numDeleteRecords;
     deleteBatch(hoodieWriteConfig, client, "003", "002", initCommitTime, numDeleteRecords,
-        HoodieSparkWriteClient::delete, false, true, 0, numRecords);
+        SparkRDDWriteClient::delete, false, true, 0, numRecords);
     checkReadRecords("000", numRecords);
 
     // Insert with devolved schema is not allowed
@@ -308,7 +308,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
       // We cannot use insertBatch directly here because we want to insert records
       // with a devolved schema.
       writeBatch(client, "004", "003", Option.empty(), "003", numRecords,
-          (String s, Integer a) -> failedRecords, HoodieSparkWriteClient::insert, true, numRecords, numRecords, 1);
+          (String s, Integer a) -> failedRecords, SparkRDDWriteClient::insert, true, numRecords, numRecords, 1);
       fail("Insert with devolved scheme should fail");
     } catch (HoodieInsertException ex) {
       // no new commit
@@ -320,7 +320,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // Update with devolved schema is not allowed
     try {
       updateBatch(hoodieDevolvedWriteConfig, client, "004", "003", Option.empty(),
-                  initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, true,
+                  initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, true,
                   numUpdateRecords, 2 * numRecords, 5);
       fail("Update with devolved scheme should fail");
     } catch (HoodieUpsertException ex) {
@@ -337,7 +337,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // We cannot use insertBatch directly here because we want to insert records
     // with a evolved schema.
     writeBatch(client, "004", "003", Option.empty(), initCommitTime, numRecords,
-        (String s, Integer a) -> evolvedRecords, HoodieSparkWriteClient::insert, true, numRecords, 2 * numRecords, 4);
+        (String s, Integer a) -> evolvedRecords, SparkRDDWriteClient::insert, true, numRecords, 2 * numRecords, 4);
     // new commit
     HoodieTimeline curTimeline = metaClient.reloadActiveTimeline().getCommitTimeline().filterCompletedInstants();
     assertTrue(curTimeline.lastInstant().get().getTimestamp().equals("004"));
@@ -346,7 +346,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     // Updates with evolved schema is allowed
     final List<HoodieRecord> updateRecords = generateUpdatesWithSchema("005", numUpdateRecords, TRIP_EXAMPLE_SCHEMA_EVOLVED);
     writeBatch(client, "005", "004", Option.empty(), initCommitTime,
-        numUpdateRecords, (String s, Integer a) -> updateRecords, HoodieSparkWriteClient::upsert, true, numUpdateRecords, 2 * numRecords, 5);
+        numUpdateRecords, (String s, Integer a) -> updateRecords, SparkRDDWriteClient::upsert, true, numUpdateRecords, 2 * numRecords, 5);
     checkReadRecords("000", 2 * numRecords);
 
     // Now even the original schema cannot be used for updates as it is devolved
@@ -354,7 +354,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     client = getHoodieWriteClient(hoodieWriteConfig, false);
     try {
       updateBatch(hoodieWriteConfig, client, "006", "005", Option.empty(),
-                  initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, true,
+                  initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, true,
                   numUpdateRecords, numRecords, 2);
       fail("Update with original scheme should fail");
     } catch (HoodieUpsertException ex) {
@@ -373,7 +373,7 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
       failedRecords.clear();
       failedRecords.addAll(dataGen.generateInserts("006", numRecords));
       writeBatch(client, "006", "005", Option.empty(), initCommitTime, numRecords,
-          (String s, Integer a) -> failedRecords, HoodieSparkWriteClient::insert, true, numRecords, numRecords, 1);
+          (String s, Integer a) -> failedRecords, SparkRDDWriteClient::insert, true, numRecords, numRecords, 1);
       fail("Insert with original scheme should fail");
     } catch (HoodieInsertException ex) {
       // no new commit
@@ -398,13 +398,13 @@ public class TestTableSchemaEvolution extends HoodieClientTestBase {
     checkReadRecords("000", numRecords);
 
     // Insert with original schema is allowed now
-    insertBatch(hoodieWriteConfig, client, "007", "003", numRecords, HoodieSparkWriteClient::insert,
+    insertBatch(hoodieWriteConfig, client, "007", "003", numRecords, SparkRDDWriteClient::insert,
         false, true, numRecords, 2 * numRecords, 1);
     checkReadRecords("000", 2 * numRecords);
 
     // Update with original schema is allowed now
     updateBatch(hoodieWriteConfig, client, "008", "007", Option.empty(),
-        initCommitTime, numUpdateRecords, HoodieSparkWriteClient::upsert, false, true,
+        initCommitTime, numUpdateRecords, SparkRDDWriteClient::upsert, false, true,
         numUpdateRecords, 2 * numRecords, 5);
     checkReadRecords("000", 2 * numRecords);
   }

@@ -34,9 +34,9 @@ import java.io.IOException;
 /**
  * Timeline Service that runs as part of write client.
  */
-public abstract class BaseEmbeddedTimelineService {
+public class EmbeddedTimelineService {
 
-  private static final Logger LOG = LogManager.getLogger(BaseEmbeddedTimelineService.class);
+  private static final Logger LOG = LogManager.getLogger(EmbeddedTimelineService.class);
 
   private int serverPort;
   protected String hostAddr;
@@ -45,8 +45,8 @@ public abstract class BaseEmbeddedTimelineService {
   private transient FileSystemViewManager viewManager;
   private transient TimelineService server;
 
-  public BaseEmbeddedTimelineService(HoodieEngineContext context, FileSystemViewStorageConfig config) {
-    setHostAddrFromContext(context);
+  public EmbeddedTimelineService(HoodieEngineContext context, String embeddedTimelineServiceHostAddr, FileSystemViewStorageConfig config) {
+    setHostAddr(embeddedTimelineServiceHostAddr);
     if (hostAddr == null) {
       this.hostAddr = NetworkUtils.getHostname();
     }
@@ -74,7 +74,14 @@ public abstract class BaseEmbeddedTimelineService {
     LOG.info("Started embedded timeline server at " + hostAddr + ":" + serverPort);
   }
 
-  public abstract void setHostAddrFromContext(HoodieEngineContext context);
+  public void setHostAddr(String embeddedTimelineServiceHostAddr) {
+    if (embeddedTimelineServiceHostAddr != null) {
+      LOG.info("Overriding hostIp to (" + embeddedTimelineServiceHostAddr + "). It was " + this.hostAddr);
+      this.hostAddr = embeddedTimelineServiceHostAddr;
+    } else {
+      LOG.warn("Unable to find driver bind address from conf");
+    }
+  }
 
   /**
    * Retrieves proper view storage configs for remote clients to access this service.

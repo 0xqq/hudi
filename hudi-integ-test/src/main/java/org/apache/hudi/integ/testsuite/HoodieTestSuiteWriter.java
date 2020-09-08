@@ -27,7 +27,7 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.client.HoodieReadClient;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieRecord;
@@ -51,12 +51,12 @@ import org.apache.spark.api.java.JavaSparkContext;
 /**
  * A writer abstraction for the Hudi test suite. This class wraps different implementations of writers used to perform
  * write operations into the target hudi dataset. Current supported writers are {@link HoodieDeltaStreamerWrapper}
- * and {@link HoodieSparkWriteClient}.
+ * and {@link SparkRDDWriteClient}.
  */
 public class HoodieTestSuiteWriter {
 
   private HoodieDeltaStreamerWrapper deltaStreamerWrapper;
-  private HoodieSparkWriteClient writeClient;
+  private SparkRDDWriteClient writeClient;
   protected HoodieTestSuiteConfig cfg;
   private Option<String> lastCheckpoint;
   private HoodieReadClient hoodieReadClient;
@@ -81,7 +81,7 @@ public class HoodieTestSuiteWriter {
     this.deltaStreamerWrapper = new HoodieDeltaStreamerWrapper(cfg, jsc);
     this.hoodieReadClient = new HoodieReadClient(context, cfg.targetBasePath);
     if (!cfg.useDeltaStreamer) {
-      this.writeClient = new HoodieSparkWriteClient(context, getHoodieClientConfig(cfg, props, schema), rollbackInflight);
+      this.writeClient = new SparkRDDWriteClient(context, getHoodieClientConfig(cfg, props, schema), rollbackInflight);
     }
     this.cfg = cfg;
     this.configuration = jsc.hadoopConfiguration();
@@ -191,13 +191,13 @@ public class HoodieTestSuiteWriter {
     }
   }
 
-  public HoodieSparkWriteClient getWriteClient(DagNode dagNode) throws IllegalAccessException {
+  public SparkRDDWriteClient getWriteClient(DagNode dagNode) throws IllegalAccessException {
     if (cfg.useDeltaStreamer & !allowWriteClientAccess(dagNode)) {
       throw new IllegalAccessException("cannot access write client when testing in deltastreamer mode");
     }
     synchronized (this) {
       if (writeClient == null) {
-        this.writeClient = new HoodieSparkWriteClient(new HoodieSparkEngineContext(this.sparkContext), getHoodieClientConfig(cfg, props, schema), false);
+        this.writeClient = new SparkRDDWriteClient(new HoodieSparkEngineContext(this.sparkContext), getHoodieClientConfig(cfg, props, schema), false);
       }
     }
     return writeClient;

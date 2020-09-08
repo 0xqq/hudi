@@ -20,7 +20,7 @@ package org.apache.hudi.utilities;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hudi.AvroConversionUtils;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.config.DFSPropertiesConfiguration;
@@ -208,7 +208,7 @@ public class UtilHelpers {
     sparkConf.set("spark.hadoop.mapred.output.compression.type", "BLOCK");
 
     additionalConfigs.forEach(sparkConf::set);
-    return HoodieSparkWriteClient.registerClasses(sparkConf);
+    return SparkRDDWriteClient.registerClasses(sparkConf);
   }
 
   public static JavaSparkContext buildSparkContext(String appName, String defaultMaster, Map<String, String> configs) {
@@ -238,8 +238,8 @@ public class UtilHelpers {
    * @param schemaStr   Schema
    * @param parallelism Parallelism
    */
-  public static HoodieSparkWriteClient createHoodieClient(JavaSparkContext jsc, String basePath, String schemaStr,
-                                                          int parallelism, Option<String> compactionStrategyClass, TypedProperties properties) {
+  public static SparkRDDWriteClient createHoodieClient(JavaSparkContext jsc, String basePath, String schemaStr,
+                                                       int parallelism, Option<String> compactionStrategyClass, TypedProperties properties) {
     HoodieCompactionConfig compactionConfig = compactionStrategyClass
         .map(strategy -> HoodieCompactionConfig.newBuilder().withInlineCompaction(false)
             .withCompactionStrategy(ReflectionUtils.loadClass(strategy)).build())
@@ -252,7 +252,7 @@ public class UtilHelpers {
             .withSchema(schemaStr).combineInput(true, true).withCompactionConfig(compactionConfig)
             .withIndexConfig(HoodieIndexConfig.newBuilder().withIndexType(HoodieIndex.IndexType.BLOOM).build())
             .withProps(properties).build();
-    return new HoodieSparkWriteClient(new HoodieSparkEngineContext(jsc), config);
+    return new SparkRDDWriteClient(new HoodieSparkEngineContext(jsc), config);
   }
 
   public static int handleErrors(JavaSparkContext jsc, String instantTime, JavaRDD<WriteStatus> writeResponse) {

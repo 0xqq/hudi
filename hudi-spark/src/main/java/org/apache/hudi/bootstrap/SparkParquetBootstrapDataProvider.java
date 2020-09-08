@@ -54,7 +54,7 @@ public class SparkParquetBootstrapDataProvider extends FullRecordBootstrapDataPr
   }
 
   @Override
-  public JavaRDD<HoodieRecord> generateInputRecord(String tableName, String sourceBasePath,
+  public JavaRDD<HoodieRecord> generateInputRecords(String tableName, String sourceBasePath,
       List<Pair<String, List<HoodieFileStatus>>> partitionPathsWithFiles) {
     String[] filePaths = partitionPathsWithFiles.stream().map(Pair::getValue)
         .flatMap(f -> f.stream().map(fs -> FileStatusUtils.toPath(fs.getPath()).toString()))

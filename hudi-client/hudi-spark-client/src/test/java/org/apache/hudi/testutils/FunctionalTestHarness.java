@@ -20,7 +20,7 @@
 package org.apache.hudi.testutils;
 
 import org.apache.hudi.client.HoodieReadClient;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieAvroPayload;
@@ -120,8 +120,8 @@ public class FunctionalTestHarness implements SparkProvider, DFSProvider, Hoodie
   }
 
   @Override
-  public HoodieSparkWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) throws IOException {
-    return new HoodieSparkWriteClient(context(), cfg, false);
+  public SparkRDDWriteClient getHoodieWriteClient(HoodieWriteConfig cfg) throws IOException {
+    return new SparkRDDWriteClient(context(), cfg, false);
   }
 
   @BeforeEach
@@ -129,7 +129,7 @@ public class FunctionalTestHarness implements SparkProvider, DFSProvider, Hoodie
     initialized = spark != null && hdfsTestService != null;
     if (!initialized) {
       SparkConf sparkConf = conf();
-      HoodieSparkWriteClient.registerClasses(sparkConf);
+      SparkRDDWriteClient.registerClasses(sparkConf);
       HoodieReadClient.addHoodieSupport(sparkConf);
       spark = SparkSession.builder().config(sparkConf).getOrCreate();
       sqlContext = spark.sqlContext();

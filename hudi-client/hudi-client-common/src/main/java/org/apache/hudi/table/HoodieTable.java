@@ -138,7 +138,7 @@ public abstract class HoodieTable<T extends HoodieRecordPayload, I, K, O, P> imp
    * @return HoodieWriteMetadata
    */
   public abstract HoodieWriteMetadata<O> bulkInsert(HoodieEngineContext context, String instantTime,
-                                                 I records, Option<BulkInsertPartitioner<I>> bulkInsertPartitioner);
+                                                    I records, Option<BulkInsertPartitioner<I>> bulkInsertPartitioner);
 
   /**
    * Deletes a list of {@link HoodieKey}s from the Hoodie table, at the supplied instantTime {@link HoodieKey}s will be
@@ -183,7 +183,7 @@ public abstract class HoodieTable<T extends HoodieRecordPayload, I, K, O, P> imp
    * @return HoodieWriteMetadata
    */
   public abstract HoodieWriteMetadata<O> bulkInsertPrepped(HoodieEngineContext context, String instantTime, I preppedRecords,
-                                                        Option<BulkInsertPartitioner<I>> bulkInsertPartitioner);
+                                                           Option<BulkInsertPartitioner<I>> bulkInsertPartitioner);
 
   public HoodieWriteConfig getConfig() {
     return config;
@@ -383,9 +383,9 @@ public abstract class HoodieTable<T extends HoodieRecordPayload, I, K, O, P> imp
    * @throws HoodieIOException
    */
   protected  abstract void reconcileAgainstMarkers(HoodieEngineContext context,
-                                         String instantTs,
-                                         List<HoodieWriteStat> stats,
-                                         boolean consistencyCheckEnabled) throws HoodieIOException;
+                                                   String instantTs,
+                                                   List<HoodieWriteStat> stats,
+                                                   boolean consistencyCheckEnabled) throws HoodieIOException;
 
   /**
    * Ensures all files passed either appear or disappear.

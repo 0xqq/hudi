@@ -19,7 +19,7 @@
 package org.apache.hudi.table.action.compact;
 
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.fs.FSUtils;
 import org.apache.hudi.common.model.FileSlice;
@@ -40,7 +40,7 @@ import org.apache.hudi.config.HoodieStorageConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieNotSupportedException;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.index.bloom.HoodieSparkBloomIndex;
+import org.apache.hudi.index.bloom.SparkHoodieBloomIndex;
 import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.testutils.HoodieClientTestHarness;
 
@@ -117,7 +117,7 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
     HoodieWriteConfig config = getConfig();
     metaClient = HoodieTableMetaClient.reload(metaClient);
     HoodieSparkTable table = HoodieSparkTable.create(config, context, metaClient);
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config);) {
 
       String newCommitTime = writeClient.startCommit();
       List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 100);
@@ -134,7 +134,7 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
   public void testWriteStatusContentsAfterCompaction() throws Exception {
     // insert 100 records
     HoodieWriteConfig config = getConfig();
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config)) {
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config)) {
       String newCommitTime = "100";
       writeClient.startCommitWithTime(newCommitTime);
 
@@ -149,7 +149,7 @@ public class TestHoodieCompactor extends HoodieClientTestHarness {
 
       List<HoodieRecord> updatedRecords = dataGen.generateUpdates(newCommitTime, records);
       JavaRDD<HoodieRecord> updatedRecordsRDD = jsc.parallelize(updatedRecords, 1);
-      HoodieIndex index = new HoodieSparkBloomIndex<>(config);
+      HoodieIndex index = new SparkHoodieBloomIndex<>(config);
       updatedRecords = ((JavaRDD<HoodieRecord>)index.tagLocation(updatedRecordsRDD, context, table)).collect();
 
       // Write them to corresponding avro logfiles. Also, set the state transition properly.

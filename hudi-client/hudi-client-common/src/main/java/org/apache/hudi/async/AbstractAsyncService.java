@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hudi.asyc;
+package org.apache.hudi.async;
 
 import org.apache.hudi.common.util.collection.Pair;
 

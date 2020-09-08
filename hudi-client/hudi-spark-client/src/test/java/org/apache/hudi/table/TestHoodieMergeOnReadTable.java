@@ -19,7 +19,7 @@
 package org.apache.hudi.table;
 
 import org.apache.hudi.client.HoodieReadClient;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.FileSlice;
@@ -136,7 +136,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   @Test
   public void testSimpleInsertAndUpdate() throws Exception {
     HoodieWriteConfig cfg = getConfig(true);
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       /**
        * Write 1 (only inserts)
@@ -184,7 +184,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
     init(HoodieFileFormat.HFILE);
 
     HoodieWriteConfig cfg = getConfig(true);
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       /**
        * Write 1 (only inserts)
@@ -233,7 +233,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
     String partitionPath = "2020/02/20"; // use only one partition for this test
     dataGen = new HoodieTestDataGenerator(new String[] { partitionPath });
     HoodieWriteConfig cfg = getConfig(true);
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       /**
        * Write 1 (only inserts)
@@ -330,7 +330,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   @Test
   public void testMetadataAggregateFromWriteStatus() throws Exception {
     HoodieWriteConfig cfg = getConfigBuilder(false).withWriteStatusClass(MetadataMergeWriteStatus.class).build();
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       String newCommitTime = "001";
       List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 200);
@@ -353,7 +353,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   @Test
   public void testSimpleInsertUpdateAndDelete() throws Exception {
     HoodieWriteConfig cfg = getConfig(true);
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       /**
        * Write 1 (only inserts, written as parquet file)
@@ -435,7 +435,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
     HoodieTestUtils.init(hadoopConf, basePath, HoodieTableType.COPY_ON_WRITE);
 
     HoodieWriteConfig cfg = getConfig(false, rollbackUsingMarkers);
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       /**
        * Write 1 (only inserts)
@@ -497,7 +497,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   private void testRollbackWithDeltaAndCompactionCommit(Boolean rollbackUsingMarkers) throws Exception {
     HoodieWriteConfig cfg = getConfig(false, rollbackUsingMarkers);
 
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       // Test delta commit rollback
       /**
@@ -540,7 +540,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
        */
       final String commitTime1 = "002";
       // WriteClient with custom config (disable small file handling)
-      try (HoodieSparkWriteClient secondClient = getHoodieWriteClient(getHoodieWriteConfigWithSmallFileHandlingOff());) {
+      try (SparkRDDWriteClient secondClient = getHoodieWriteClient(getHoodieWriteConfigWithSmallFileHandlingOff());) {
         secondClient.startCommitWithTime(commitTime1);
 
         List<HoodieRecord> copyOfRecords = new ArrayList<>(records);
@@ -573,7 +573,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
        * Write 3 (inserts + updates - testing successful delta commit)
        */
       final String commitTime2 = "002";
-      try (HoodieSparkWriteClient thirdClient = getHoodieWriteClient(cfg);) {
+      try (SparkRDDWriteClient thirdClient = getHoodieWriteClient(cfg);) {
         thirdClient.startCommitWithTime(commitTime2);
 
         List<HoodieRecord> copyOfRecords = new ArrayList<>(records);
@@ -655,7 +655,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   @Test
   public void testMultiRollbackWithDeltaAndCompactionCommit() throws Exception {
     HoodieWriteConfig cfg = getConfig(false);
-    try (final HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (final SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
       /**
        * Write 1 (only inserts)
        */
@@ -695,7 +695,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
        */
       newCommitTime = "002";
       // WriteClient with custom config (disable small file handling)
-      HoodieSparkWriteClient nClient = getHoodieWriteClient(getHoodieWriteConfigWithSmallFileHandlingOff());
+      SparkRDDWriteClient nClient = getHoodieWriteClient(getHoodieWriteConfigWithSmallFileHandlingOff());
       nClient.startCommitWithTime(newCommitTime);
 
       List<HoodieRecord> copyOfRecords = new ArrayList<>(records);
@@ -818,7 +818,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   @Test
   public void testUpsertPartitioner() throws Exception {
     HoodieWriteConfig cfg = getConfig(true);
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       /**
        * Write 1 (only inserts, written as parquet file)
@@ -898,7 +898,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   public void testLogFileCountsAfterCompaction() throws Exception {
     // insert 100 records
     HoodieWriteConfig config = getConfig(true);
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config);) {
       String newCommitTime = "100";
       writeClient.startCommitWithTime(newCommitTime);
 
@@ -972,7 +972,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
     // insert 100 records
     // Setting IndexType to be InMemory to simulate Global Index nature
     HoodieWriteConfig config = getConfigBuilder(false, IndexType.INMEMORY).build();
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config);) {
       String newCommitTime = "100";
       writeClient.startCommitWithTime(newCommitTime);
 
@@ -1008,7 +1008,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
     // insert 100 records
     // Setting IndexType to be InMemory to simulate Global Index nature
     HoodieWriteConfig config = getConfigBuilder(false, rollbackUsingMarkers, IndexType.INMEMORY).build();
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config)) {
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config)) {
       String newCommitTime = "100";
       writeClient.startCommitWithTime(newCommitTime);
 
@@ -1105,7 +1105,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
     // insert 100 records
     // Setting IndexType to be InMemory to simulate Global Index nature
     HoodieWriteConfig config = getConfigBuilder(false, rollbackUsingMarkers, IndexType.INMEMORY).build();
-    try (HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);) {
+    try (SparkRDDWriteClient writeClient = getHoodieWriteClient(config);) {
       String newCommitTime = "100";
       writeClient.startCommitWithTime(newCommitTime);
 
@@ -1168,7 +1168,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   public void testMetadataStatsOnCommit(Boolean rollbackUsingMarkers) throws Exception {
     HoodieWriteConfig cfg = getConfigBuilder(false, rollbackUsingMarkers, IndexType.INMEMORY)
         .withAutoCommit(false).build();
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
       metaClient = getHoodieMetaClient(hadoopConf, basePath);
       HoodieTable table = HoodieSparkTable.create(cfg, context, metaClient);
 
@@ -1261,7 +1261,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   @Test
   public void testRollingStatsWithSmallFileHandling() throws Exception {
     HoodieWriteConfig cfg = getConfigBuilder(false, IndexType.INMEMORY).withAutoCommit(false).build();
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
       Map<String, Long> fileIdToInsertsMap = new HashMap<>();
       Map<String, Long> fileIdToUpsertsMap = new HashMap<>();
 
@@ -1376,7 +1376,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
   @Test
   public void testHandleUpdateWithMultiplePartitions() throws Exception {
     HoodieWriteConfig cfg = getConfig(true);
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       /**
        * Write 1 (only inserts, written as parquet file)
@@ -1482,7 +1482,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
         .withRollbackUsingMarkers(rollbackUsingMarkers);
   }
 
-  private FileStatus[] insertAndGetFilePaths(List<HoodieRecord> records, HoodieSparkWriteClient client,
+  private FileStatus[] insertAndGetFilePaths(List<HoodieRecord> records, SparkRDDWriteClient client,
                                              HoodieWriteConfig cfg, String commitTime) throws IOException {
     JavaRDD<HoodieRecord> writeRecords = jsc.parallelize(records, 1);
 
@@ -1512,7 +1512,7 @@ public class TestHoodieMergeOnReadTable extends HoodieClientTestHarness {
     return allFiles;
   }
 
-  private FileStatus[] updateAndGetFilePaths(List<HoodieRecord> records, HoodieSparkWriteClient client,
+  private FileStatus[] updateAndGetFilePaths(List<HoodieRecord> records, SparkRDDWriteClient client,
                                              HoodieWriteConfig cfg, String commitTime) throws IOException {
     Map<HoodieKey, HoodieRecord> recordsMap = new HashMap<>();
     for (HoodieRecord rec : records) {

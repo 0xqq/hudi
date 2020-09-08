@@ -27,7 +27,7 @@ import org.apache.hudi.avro.model.HoodieRollbackMetadata;
 import org.apache.hudi.callback.HoodieWriteCommitCallback;
 import org.apache.hudi.callback.common.HoodieWriteCommitCallbackMessage;
 import org.apache.hudi.callback.util.HoodieCommitCallbackFactory;
-import org.apache.hudi.client.embebbed.BaseEmbeddedTimelineService;
+import org.apache.hudi.client.embebbed.EmbeddedTimelineService;
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
 import org.apache.hudi.common.model.HoodieKey;
@@ -75,6 +75,7 @@ import java.util.stream.Collectors;
  * @param <P> Type of record position [Key, Option[partitionPath, fileID]] in hoodie table
  */
 public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I, K, O, P> extends AbstractHoodieClient {
+  protected static final String LOOKUP_STR = "lookup";
   private static final long serialVersionUID = 1L;
   private static final Logger LOG = LogManager.getLogger(AbstractHoodieWriteClient.class);
 
@@ -85,7 +86,6 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
   private transient WriteOperationType operationType;
   private transient HoodieWriteCommitCallback commitCallback;
 
-  protected static final String LOOKUP_STR = "lookup";
   protected final boolean rollbackPending;
   protected transient Timer.Context compactionTimer;
   private transient AsyncCleanerService asyncCleanerService;
@@ -128,7 +128,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
    * @param timelineService Timeline Service that runs as part of write client.
    */
   public AbstractHoodieWriteClient(HoodieEngineContext context, HoodieWriteConfig writeConfig, boolean rollbackPending,
-                                   Option<BaseEmbeddedTimelineService> timelineService) {
+                                   Option<EmbeddedTimelineService> timelineService) {
     super(context, writeConfig, timelineService);
     this.metrics = new HoodieMetrics(config, config.getTableName());
     this.rollbackPending = rollbackPending;

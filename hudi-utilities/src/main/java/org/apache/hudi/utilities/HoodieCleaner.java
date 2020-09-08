@@ -18,7 +18,7 @@
 
 package org.apache.hudi.utilities;
 
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.config.TypedProperties;
 import org.apache.hudi.common.fs.FSUtils;
@@ -69,7 +69,7 @@ public class HoodieCleaner {
 
   public void run() {
     HoodieWriteConfig hoodieCfg = getHoodieClientConfig();
-    HoodieSparkWriteClient client = new HoodieSparkWriteClient<>(new HoodieSparkEngineContext(jssc), hoodieCfg, false);
+    SparkRDDWriteClient client = new SparkRDDWriteClient<>(new HoodieSparkEngineContext(jssc), hoodieCfg, false);
     client.clean();
   }
 

@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hudi.DataSourceWriteOptions._
 import org.apache.hudi.avro.HoodieAvroUtils
-import org.apache.hudi.client.{HoodieSparkWriteClient, WriteStatus}
+import org.apache.hudi.client.{SparkRDDWriteClient, WriteStatus}
 import org.apache.hudi.common.config.TypedProperties
 import org.apache.hudi.common.model.{HoodieRecordPayload, HoodieTableType, WriteOperationType}
 import org.apache.hudi.common.table.{HoodieTableConfig, HoodieTableMetaClient}
@@ -58,11 +58,11 @@ private[hudi] object HoodieSparkSqlWriter {
             parameters: Map[String, String],
             df: DataFrame,
             hoodieTableConfigOpt: Option[HoodieTableConfig] = Option.empty,
-            hoodieWriteClient: Option[HoodieSparkWriteClient[HoodieRecordPayload[Nothing]]] = Option.empty,
-            asyncCompactionTriggerFn: Option[Function1[HoodieSparkWriteClient[HoodieRecordPayload[Nothing]], Unit]] = Option.empty
+            hoodieWriteClient: Option[SparkRDDWriteClient[HoodieRecordPayload[Nothing]]] = Option.empty,
+            asyncCompactionTriggerFn: Option[Function1[SparkRDDWriteClient[HoodieRecordPayload[Nothing]], Unit]] = Option.empty
            )
   : (Boolean, common.util.Option[String], common.util.Option[String],
-    HoodieSparkWriteClient[HoodieRecordPayload[Nothing]], HoodieTableConfig) = {
+    SparkRDDWriteClient[HoodieRecordPayload[Nothing]], HoodieTableConfig) = {
 
     val sparkContext = sqlContext.sparkContext
     val path = parameters.get("path")
@@ -120,7 +120,7 @@ private[hudi] object HoodieSparkSqlWriter {
       }
       // scalastyle:on
 
-      val (writeStatuses, writeClient: HoodieSparkWriteClient[HoodieRecordPayload[Nothing]]) =
+      val (writeStatuses, writeClient: SparkRDDWriteClient[HoodieRecordPayload[Nothing]]) =
         if (operation != WriteOperationType.DELETE) {
           // register classes & schemas
           val (structName, nameSpace) = AvroConversionUtils.getAvroRecordNameAndNamespace(tblName)
@@ -145,7 +145,7 @@ private[hudi] object HoodieSparkSqlWriter {
           // Create a HoodieWriteClient & issue the write.
           val client = hoodieWriteClient.getOrElse(DataSourceUtils.createHoodieClient(jsc, schema.toString, path.get,
             tblName, mapAsJavaMap(parameters)
-          )).asInstanceOf[HoodieSparkWriteClient[HoodieRecordPayload[Nothing]]]
+          )).asInstanceOf[SparkRDDWriteClient[HoodieRecordPayload[Nothing]]]
 
           if (asyncCompactionTriggerFn.isDefined &&
             isAsyncCompactionEnabled(client, tableConfig, parameters, jsc.hadoopConfiguration())) {
@@ -185,7 +185,7 @@ private[hudi] object HoodieSparkSqlWriter {
           // Create a HoodieWriteClient & issue the delete.
           val client = hoodieWriteClient.getOrElse(DataSourceUtils.createHoodieClient(jsc,
             Schema.create(Schema.Type.NULL).toString, path.get, tblName,
-            mapAsJavaMap(parameters))).asInstanceOf[HoodieSparkWriteClient[HoodieRecordPayload[Nothing]]]
+            mapAsJavaMap(parameters))).asInstanceOf[SparkRDDWriteClient[HoodieRecordPayload[Nothing]]]
 
           if (asyncCompactionTriggerFn.isDefined &&
             isAsyncCompactionEnabled(client, tableConfig, parameters, jsc.hadoopConfiguration())) {
@@ -378,7 +378,7 @@ private[hudi] object HoodieSparkSqlWriter {
 
   private def commitAndPerformPostOperations(writeStatuses: JavaRDD[WriteStatus],
                                              parameters: Map[String, String],
-                                             client: HoodieSparkWriteClient[HoodieRecordPayload[Nothing]],
+                                             client: SparkRDDWriteClient[HoodieRecordPayload[Nothing]],
                                              tableConfig: HoodieTableConfig,
                                              instantTime: String,
                                              basePath: Path,
@@ -437,7 +437,7 @@ private[hudi] object HoodieSparkSqlWriter {
     }
   }
 
-  private def isAsyncCompactionEnabled(client: HoodieSparkWriteClient[HoodieRecordPayload[Nothing]],
+  private def isAsyncCompactionEnabled(client: SparkRDDWriteClient[HoodieRecordPayload[Nothing]],
                                        tableConfig: HoodieTableConfig,
                                        parameters: Map[String, String], configuration: Configuration) : Boolean = {
     log.info(s"Config.isInlineCompaction ? ${client.getConfig.isInlineCompaction}")

@@ -20,8 +20,7 @@ package org.apache.hudi.client;
 
 import com.codahale.metrics.Timer;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hudi.client.embebbed.BaseEmbeddedTimelineService;
-import org.apache.hudi.client.embedded.SparkEmbeddedTimelineService;
+import org.apache.hudi.client.embebbed.EmbeddedTimelineService;
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
@@ -42,7 +41,7 @@ import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieCommitException;
 import org.apache.hudi.exception.HoodieIOException;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.index.HoodieSparkIndexFactory;
+import org.apache.hudi.index.SparkHoodieIndex;
 import org.apache.hudi.table.BaseHoodieTimelineArchiveLog;
 import org.apache.hudi.table.BulkInsertPartitioner;
 import org.apache.hudi.table.HoodieSparkTable;
@@ -63,20 +62,20 @@ import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
-public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends AbstractHoodieWriteClient<T,
+public class SparkRDDWriteClient<T extends HoodieRecordPayload> extends AbstractHoodieWriteClient<T,
     JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> {
 
-  private static final Logger LOG = LogManager.getLogger(HoodieSparkWriteClient.class);
+  private static final Logger LOG = LogManager.getLogger(SparkRDDWriteClient.class);
 
-  public HoodieSparkWriteClient(HoodieEngineContext context, HoodieWriteConfig clientConfig) {
+  public SparkRDDWriteClient(HoodieEngineContext context, HoodieWriteConfig clientConfig) {
     super(context, clientConfig);
   }
 
-  public HoodieSparkWriteClient(HoodieEngineContext context, HoodieWriteConfig writeConfig, boolean rollbackPending) {
+  public SparkRDDWriteClient(HoodieEngineContext context, HoodieWriteConfig writeConfig, boolean rollbackPending) {
     super(context, writeConfig, rollbackPending);
   }
 
-  public HoodieSparkWriteClient(HoodieEngineContext context, HoodieWriteConfig writeConfig, boolean rollbackPending, Option<BaseEmbeddedTimelineService> timelineService) {
+  public SparkRDDWriteClient(HoodieEngineContext context, HoodieWriteConfig writeConfig, boolean rollbackPending, Option<EmbeddedTimelineService> timelineService) {
     super(context, writeConfig, rollbackPending, timelineService);
   }
 
@@ -93,7 +92,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   protected HoodieIndex<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> createIndex(HoodieWriteConfig writeConfig) {
-    return HoodieSparkIndexFactory.createIndex(config);
+    return SparkHoodieIndex.createIndex(config);
   }
 
   @Override
@@ -110,7 +109,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
   @Override
   public JavaRDD<HoodieRecord<T>> filterExists(JavaRDD<HoodieRecord<T>> hoodieRecords) {
     // Create a Hoodie table which encapsulated the commits and files visible
-    HoodieTable table = HoodieSparkTable.create(config, context);
+    HoodieSparkTable<T> table = HoodieSparkTable.create(config, context);
     Timer.Context indexTimer = metrics.getIndexCtx();
     JavaRDD<HoodieRecord<T>> recordsWithLocation = getIndex().tagLocation(hoodieRecords, context, table);
     metrics.updateIndexMetrics(LOOKUP_STR, metrics.getDurationInMs(indexTimer == null ? 0L : indexTimer.stop()));
@@ -125,13 +124,13 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
     if (rollbackPending) {
       rollBackInflightBootstrap();
     }
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, HoodieTimeline.METADATA_BOOTSTRAP_INSTANT_TS);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table =  getTableAndInitCtx(WriteOperationType.UPSERT, HoodieTimeline.METADATA_BOOTSTRAP_INSTANT_TS);
     table.bootstrap(context, extraMetadata);
   }
 
   @Override
   public JavaRDD<WriteStatus> upsert(JavaRDD<HoodieRecord<T>> records, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table = getTableAndInitCtx(WriteOperationType.UPSERT, instantTime);
     table.validateUpsertSchema();
     setOperationType(WriteOperationType.UPSERT);
     startAsyncCleaningIfEnabled(this, instantTime);
@@ -144,31 +143,31 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> upsertPreppedRecords(JavaRDD<HoodieRecord<T>> preppedRecords, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.UPSERT_PREPPED, instantTime);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table = getTableAndInitCtx(WriteOperationType.UPSERT_PREPPED, instantTime);
     table.validateUpsertSchema();
     setOperationType(WriteOperationType.UPSERT_PREPPED);
     startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata result = table.upsertPrepped(context,instantTime, preppedRecords);
+    HoodieWriteMetadata<JavaRDD<WriteStatus>> result = table.upsertPrepped(context,instantTime, preppedRecords);
     return postWrite(result, instantTime, table);
   }
 
   @Override
   public JavaRDD<WriteStatus> insert(JavaRDD<HoodieRecord<T>> records, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.INSERT, instantTime);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table = getTableAndInitCtx(WriteOperationType.INSERT, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.INSERT);
     startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata result = table.insert(context,instantTime, records);
+    HoodieWriteMetadata<JavaRDD<WriteStatus>> result = table.insert(context,instantTime, records);
     return postWrite(result, instantTime, table);
   }
 
   @Override
   public JavaRDD<WriteStatus> insertPreppedRecords(JavaRDD<HoodieRecord<T>> preppedRecords, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.INSERT_PREPPED, instantTime);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table = getTableAndInitCtx(WriteOperationType.INSERT_PREPPED, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.INSERT_PREPPED);
     startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata result = table.insertPrepped(context,instantTime, preppedRecords);
+    HoodieWriteMetadata<JavaRDD<WriteStatus>> result = table.insertPrepped(context,instantTime, preppedRecords);
     return postWrite(result, instantTime, table);
   }
 
@@ -179,29 +178,29 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public JavaRDD<WriteStatus> bulkInsert(JavaRDD<HoodieRecord<T>> records, String instantTime, Option<BulkInsertPartitioner<JavaRDD<HoodieRecord<T>>>> userDefinedBulkInsertPartitioner) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.BULK_INSERT, instantTime);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table = getTableAndInitCtx(WriteOperationType.BULK_INSERT, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.BULK_INSERT);
     startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata result = table.bulkInsert(context,instantTime, records, userDefinedBulkInsertPartitioner);
+    HoodieWriteMetadata<JavaRDD<WriteStatus>> result = table.bulkInsert(context,instantTime, records, userDefinedBulkInsertPartitioner);
     return postWrite(result, instantTime, table);
   }
 
   @Override
   public JavaRDD<WriteStatus> bulkInsertPreppedRecords(JavaRDD<HoodieRecord<T>> preppedRecords, String instantTime, Option<BulkInsertPartitioner<JavaRDD<HoodieRecord<T>>>> bulkInsertPartitioner) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.BULK_INSERT_PREPPED, instantTime);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table = getTableAndInitCtx(WriteOperationType.BULK_INSERT_PREPPED, instantTime);
     table.validateInsertSchema();
     setOperationType(WriteOperationType.BULK_INSERT_PREPPED);
     startAsyncCleaningIfEnabled(this, instantTime);
-    HoodieWriteMetadata result = table.bulkInsertPrepped(context,instantTime, preppedRecords, bulkInsertPartitioner);
+    HoodieWriteMetadata<JavaRDD<WriteStatus>> result = table.bulkInsertPrepped(context,instantTime, preppedRecords, bulkInsertPartitioner);
     return postWrite(result, instantTime, table);
   }
 
   @Override
   public JavaRDD<WriteStatus> delete(JavaRDD<HoodieKey> keys, String instantTime) {
-    HoodieSparkTable table = (HoodieSparkTable) getTableAndInitCtx(WriteOperationType.DELETE, instantTime);
+    HoodieTable<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> table = getTableAndInitCtx(WriteOperationType.DELETE, instantTime);
     setOperationType(WriteOperationType.DELETE);
-    HoodieWriteMetadata result = table.delete(context,instantTime, keys);
+    HoodieWriteMetadata<JavaRDD<WriteStatus>> result = table.delete(context,instantTime, keys);
     return postWrite(result, instantTime, table);
   }
 
@@ -253,7 +252,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   public void commitCompaction(String compactionInstantTime, JavaRDD<WriteStatus> writeStatuses, Option<Map<String, String>> extraMetadata) throws IOException {
-    HoodieSparkTable table = HoodieSparkTable.create(config, context);
+    HoodieSparkTable<T> table = HoodieSparkTable.create(config, context);
     HoodieCommitMetadata metadata = SparkCompactHelpers.newInstance().createCompactionMetadata(
         table, compactionInstantTime, writeStatuses, config.getSchema());
     extraMetadata.ifPresent(m -> m.forEach(metadata::addMetadata));
@@ -282,7 +281,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
 
   @Override
   protected JavaRDD<WriteStatus> compact(String compactionInstantTime, boolean shouldComplete) {
-    HoodieSparkTable table = HoodieSparkTable.create(config, context);
+    HoodieSparkTable<T> table = HoodieSparkTable.create(config, context);
     HoodieTimeline pendingCompactionTimeline = table.getActiveTimeline().filterPendingCompactionTimeline();
     HoodieInstant inflightInstant = HoodieTimeline.getCompactionInflightInstant(compactionInstantTime);
     if (pendingCompactionTimeline.containsInstant(inflightInstant)) {
@@ -290,10 +289,10 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
       table.getMetaClient().reloadActiveTimeline();
     }
     compactionTimer = metrics.getCompactionCtx();
-    HoodieWriteMetadata compactionMetadata = table.compact(context, compactionInstantTime);
-    JavaRDD<WriteStatus> statuses = (JavaRDD<WriteStatus>) compactionMetadata.getWriteStatuses();
+    HoodieWriteMetadata<JavaRDD<WriteStatus>> compactionMetadata = table.compact(context, compactionInstantTime);
+    JavaRDD<WriteStatus> statuses = compactionMetadata.getWriteStatuses();
     if (shouldComplete && compactionMetadata.getCommitMetadata().isPresent()) {
-      completeCompaction((HoodieCommitMetadata) compactionMetadata.getCommitMetadata().get(), statuses, table, compactionInstantTime);
+      completeCompaction(compactionMetadata.getCommitMetadata().get(), statuses, table, compactionInstantTime);
     }
     return statuses;
   }
@@ -310,7 +309,7 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
       setWriteSchemaForDeletes(metaClient);
     }
     // Create a Hoodie table which encapsulated the commits and files visible
-    HoodieSparkTable table = HoodieSparkTable.create(config, (HoodieSparkEngineContext) context, metaClient);
+    HoodieSparkTable<T> table = HoodieSparkTable.create(config, (HoodieSparkEngineContext) context, metaClient);
     if (table.getMetaClient().getCommitActionType().equals(HoodieTimeline.COMMIT_ACTION)) {
       writeContext = metrics.getCommitCtx();
     } else {
@@ -330,31 +329,5 @@ public class HoodieSparkWriteClient<T extends HoodieRecordPayload> extends Abstr
       LOG.info("Auto cleaning is not enabled. Not running cleaner now");
     }
     return asyncCleanerService;
-  }
-
-  @Override
-  public void startEmbeddedServerView() {
-    synchronized (this) {
-      if (config.isEmbeddedTimelineServerEnabled()) {
-        if (!timelineServer.isPresent()) {
-          // Run Embedded Timeline Server
-          LOG.info("Starting Timeline service !!");
-          timelineServer = Option.of(new SparkEmbeddedTimelineService(context,
-              config.getClientSpecifiedViewStorageConfig()));
-          try {
-            timelineServer.get().startServer();
-            // Allow executor to find this newly instantiated timeline service
-            config.setViewStorageConfig(timelineServer.get().getRemoteFileSystemViewConfig());
-          } catch (IOException e) {
-            LOG.warn("Unable to start timeline service. Proceeding as if embedded server is disabled", e);
-            stopEmbeddedServerView(false);
-          }
-        } else {
-          LOG.info("Timeline Server already running. Not restarting the service");
-        }
-      } else {
-        LOG.info("Embedded Timeline Server is disabled. Not starting timeline service");
-      }
-    }
   }
 }

@@ -24,7 +24,7 @@ import org.apache.hudi.avro.model.HoodieCleanPartitionMetadata;
 import org.apache.hudi.avro.model.HoodieCleanerPlan;
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.avro.model.HoodieFileStatus;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.HoodieCleanStat;
 import org.apache.hudi.common.bootstrap.TestBootstrapIndex;
@@ -63,7 +63,7 @@ import org.apache.hudi.config.HoodieCompactionConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieIOException;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.index.HoodieSparkIndexFactory;
+import org.apache.hudi.index.SparkHoodieIndex;
 import org.apache.hudi.table.action.clean.CleanPlanner;
 import org.apache.hudi.testutils.HoodieClientTestBase;
 
@@ -122,9 +122,9 @@ public class TestCleaner extends HoodieClientTestBase {
    * @param insertFn Insertion API for testing
    * @throws Exception in case of error
    */
-  private void insertFirstBigBatchForClientCleanerTest(HoodieWriteConfig cfg, HoodieSparkWriteClient client,
+  private void insertFirstBigBatchForClientCleanerTest(HoodieWriteConfig cfg, SparkRDDWriteClient client,
       Function2<List<HoodieRecord>, String, Integer> recordGenFunction,
-      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
+      Function3<JavaRDD<WriteStatus>, SparkRDDWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
       HoodieCleaningPolicy cleaningPolicy) throws Exception {
 
     /*
@@ -151,7 +151,7 @@ public class TestCleaner extends HoodieClientTestBase {
     // We no longer write empty cleaner plans when there is nothing to be cleaned.
     assertTrue(table.getCompletedCleanTimeline().empty());
 
-    HoodieIndex index = HoodieSparkIndexFactory.createIndex(cfg);
+    HoodieIndex index = SparkHoodieIndex.createIndex(cfg);
     List<HoodieRecord> taggedRecords = ((JavaRDD<HoodieRecord>)index.tagLocation(jsc.parallelize(records, 1), context, table)).collect();
     checkTaggedRecords(taggedRecords, newCommitTime);
   }
@@ -161,7 +161,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertAndCleanByVersions() throws Exception {
-    testInsertAndCleanByVersions(HoodieSparkWriteClient::insert, HoodieSparkWriteClient::upsert, false);
+    testInsertAndCleanByVersions(SparkRDDWriteClient::insert, SparkRDDWriteClient::upsert, false);
   }
 
   /**
@@ -169,7 +169,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertPreppedAndCleanByVersions() throws Exception {
-    testInsertAndCleanByVersions(HoodieSparkWriteClient::insertPreppedRecords, HoodieSparkWriteClient::upsertPreppedRecords,
+    testInsertAndCleanByVersions(SparkRDDWriteClient::insertPreppedRecords, SparkRDDWriteClient::upsertPreppedRecords,
         true);
   }
 
@@ -178,7 +178,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testBulkInsertAndCleanByVersions() throws Exception {
-    testInsertAndCleanByVersions(HoodieSparkWriteClient::bulkInsert, HoodieSparkWriteClient::upsert, false);
+    testInsertAndCleanByVersions(SparkRDDWriteClient::bulkInsert, SparkRDDWriteClient::upsert, false);
   }
 
   /**
@@ -188,7 +188,7 @@ public class TestCleaner extends HoodieClientTestBase {
   public void testBulkInsertPreppedAndCleanByVersions() throws Exception {
     testInsertAndCleanByVersions(
         (client, recordRDD, instantTime) -> client.bulkInsertPreppedRecords(recordRDD, instantTime, Option.empty()),
-        HoodieSparkWriteClient::upsertPreppedRecords, true);
+        SparkRDDWriteClient::upsertPreppedRecords, true);
   }
 
   /**
@@ -201,8 +201,8 @@ public class TestCleaner extends HoodieClientTestBase {
    * @throws Exception in case of errors
    */
   private void testInsertAndCleanByVersions(
-      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
-      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
+      Function3<JavaRDD<WriteStatus>, SparkRDDWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
+      Function3<JavaRDD<WriteStatus>, SparkRDDWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
       throws Exception {
     int maxVersions = 2; // keep upto 2 versions for each file
     HoodieWriteConfig cfg = getConfigBuilder()
@@ -211,7 +211,7 @@ public class TestCleaner extends HoodieClientTestBase {
         .withParallelism(1, 1).withBulkInsertParallelism(1).withFinalizeWriteParallelism(1).withDeleteParallelism(1)
         .withConsistencyGuardConfig(ConsistencyGuardConfig.newBuilder().withConsistencyCheckEnabled(true).build())
         .build();
-    try (HoodieSparkWriteClient client = getHoodieWriteClient(cfg);) {
+    try (SparkRDDWriteClient client = getHoodieWriteClient(cfg);) {
 
       final Function2<List<HoodieRecord>, String, Integer> recordInsertGenWrappedFunction =
           generateWrapRecordsFn(isPreppedAPI, cfg, dataGen::generateInserts);
@@ -323,7 +323,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertAndCleanByCommits() throws Exception {
-    testInsertAndCleanByCommits(HoodieSparkWriteClient::insert, HoodieSparkWriteClient::upsert, false);
+    testInsertAndCleanByCommits(SparkRDDWriteClient::insert, SparkRDDWriteClient::upsert, false);
   }
 
   /**
@@ -331,7 +331,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testInsertPreppedAndCleanByCommits() throws Exception {
-    testInsertAndCleanByCommits(HoodieSparkWriteClient::insertPreppedRecords, HoodieSparkWriteClient::upsertPreppedRecords, true);
+    testInsertAndCleanByCommits(SparkRDDWriteClient::insertPreppedRecords, SparkRDDWriteClient::upsertPreppedRecords, true);
   }
 
   /**
@@ -341,7 +341,7 @@ public class TestCleaner extends HoodieClientTestBase {
   public void testBulkInsertPreppedAndCleanByCommits() throws Exception {
     testInsertAndCleanByCommits(
         (client, recordRDD, instantTime) -> client.bulkInsertPreppedRecords(recordRDD, instantTime, Option.empty()),
-        HoodieSparkWriteClient::upsertPreppedRecords, true);
+        SparkRDDWriteClient::upsertPreppedRecords, true);
   }
 
   /**
@@ -349,7 +349,7 @@ public class TestCleaner extends HoodieClientTestBase {
    */
   @Test
   public void testBulkInsertAndCleanByCommits() throws Exception {
-    testInsertAndCleanByCommits(HoodieSparkWriteClient::bulkInsert, HoodieSparkWriteClient::upsert, false);
+    testInsertAndCleanByCommits(SparkRDDWriteClient::bulkInsert, SparkRDDWriteClient::upsert, false);
   }
 
   /**
@@ -362,8 +362,8 @@ public class TestCleaner extends HoodieClientTestBase {
    * @throws Exception in case of errors
    */
   private void testInsertAndCleanByCommits(
-      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
-      Function3<JavaRDD<WriteStatus>, HoodieSparkWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
+      Function3<JavaRDD<WriteStatus>, SparkRDDWriteClient, JavaRDD<HoodieRecord>, String> insertFn,
+      Function3<JavaRDD<WriteStatus>, SparkRDDWriteClient, JavaRDD<HoodieRecord>, String> upsertFn, boolean isPreppedAPI)
       throws Exception {
     int maxCommits = 3; // keep upto 3 commits from the past
     HoodieWriteConfig cfg = getConfigBuilder()
@@ -372,7 +372,7 @@ public class TestCleaner extends HoodieClientTestBase {
         .withParallelism(1, 1).withBulkInsertParallelism(1).withFinalizeWriteParallelism(1).withDeleteParallelism(1)
         .withConsistencyGuardConfig(ConsistencyGuardConfig.newBuilder().withConsistencyCheckEnabled(true).build())
         .build();
-    HoodieSparkWriteClient client = getHoodieWriteClient(cfg);
+    SparkRDDWriteClient client = getHoodieWriteClient(cfg);
 
     final Function2<List<HoodieRecord>, String, Integer> recordInsertGenWrappedFunction =
         generateWrapRecordsFn(isPreppedAPI, cfg, dataGen::generateInserts);
@@ -442,7 +442,7 @@ public class TestCleaner extends HoodieClientTestBase {
    * @param config HoodieWriteConfig
    */
   private List<HoodieCleanStat> runCleaner(HoodieWriteConfig config, boolean simulateRetryFailure) throws IOException {
-    HoodieSparkWriteClient<?> writeClient = getHoodieWriteClient(config);
+    SparkRDDWriteClient<?> writeClient = getHoodieWriteClient(config);
     String cleanInstantTs = getNextInstant();
     HoodieCleanMetadata cleanMetadata1 = writeClient.clean(cleanInstantTs);
 

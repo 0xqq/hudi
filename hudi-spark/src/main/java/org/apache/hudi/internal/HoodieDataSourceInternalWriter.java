@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieWriteStat;
 import org.apache.hudi.common.model.WriteOperationType;
@@ -59,7 +59,7 @@ public class HoodieDataSourceInternalWriter implements DataSourceWriter {
   private final HoodieTableMetaClient metaClient;
   private final HoodieWriteConfig writeConfig;
   private final StructType structType;
-  private final HoodieSparkWriteClient writeClient;
+  private final SparkRDDWriteClient writeClient;
   private final HoodieSparkTable hoodieTable;
   private final WriteOperationType operationType;
 
@@ -69,7 +69,7 @@ public class HoodieDataSourceInternalWriter implements DataSourceWriter {
     this.writeConfig = writeConfig;
     this.structType = structType;
     this.operationType = WriteOperationType.BULK_INSERT;
-    this.writeClient  = new HoodieSparkWriteClient<>(new HoodieSparkEngineContext(new JavaSparkContext(sparkSession.sparkContext())), writeConfig, true);
+    this.writeClient  = new SparkRDDWriteClient<>(new HoodieSparkEngineContext(new JavaSparkContext(sparkSession.sparkContext())), writeConfig, true);
     writeClient.setOperationType(operationType);
     writeClient.startCommitWithTime(instantTime);
     this.metaClient = new HoodieTableMetaClient(configuration, writeConfig.getBasePath());

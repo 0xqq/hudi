@@ -18,7 +18,7 @@
 
 package org.apache.hudi.table.action.commit;
 
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.WriteStatus;
 import org.apache.hudi.common.bloom.BloomFilter;
 import org.apache.hudi.common.fs.FSUtils;
@@ -119,7 +119,7 @@ public class TestCopyOnWriteActionExecutor extends HoodieClientTestBase {
     // Prepare the AvroParquetIO
     HoodieWriteConfig config = makeHoodieClientConfig();
     String firstCommitTime = HoodieTestUtils.makeNewCommitTime();
-    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
+    SparkRDDWriteClient writeClient = getHoodieWriteClient(config);
     writeClient.startCommitWithTime(firstCommitTime);
     metaClient = HoodieTableMetaClient.reload(metaClient);
 
@@ -435,7 +435,7 @@ public class TestCopyOnWriteActionExecutor extends HoodieClientTestBase {
         .withPath(basePath).withSchema(TRIP_EXAMPLE_SCHEMA)
         .withBulkInsertParallelism(2).withBulkInsertSortMode(bulkInsertMode).build();
     String instantTime = HoodieTestUtils.makeNewCommitTime();
-    HoodieSparkWriteClient writeClient = getHoodieWriteClient(config);
+    SparkRDDWriteClient writeClient = getHoodieWriteClient(config);
     writeClient.startCommitWithTime(instantTime);
     metaClient = HoodieTableMetaClient.reload(metaClient);
     HoodieSparkCopyOnWriteTable table = (HoodieSparkCopyOnWriteTable) HoodieSparkTable.create(config, context, metaClient);

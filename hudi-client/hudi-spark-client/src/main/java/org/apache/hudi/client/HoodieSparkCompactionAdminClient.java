@@ -19,7 +19,6 @@
 package org.apache.hudi.client;
 
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
-import org.apache.hudi.client.embedded.SparkEmbeddedTimelineService;
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.CompactionOperation;
@@ -126,31 +125,5 @@ public class HoodieSparkCompactionAdminClient extends BaseCompactionAdminClient 
     }
     LOG.warn("No operations for compaction instant : " + compactionInstant);
     return new ArrayList<>();
-  }
-
-  @Override
-  public void startEmbeddedServerView() {
-    synchronized (this) {
-      if (config.isEmbeddedTimelineServerEnabled()) {
-        if (!timelineServer.isPresent()) {
-          // Run Embedded Timeline Server
-          LOG.info("Starting Timeline service !!");
-          timelineServer = Option.of(new SparkEmbeddedTimelineService(context,
-              config.getClientSpecifiedViewStorageConfig()));
-          try {
-            timelineServer.get().startServer();
-            // Allow executor to find this newly instantiated timeline service
-            config.setViewStorageConfig(timelineServer.get().getRemoteFileSystemViewConfig());
-          } catch (IOException e) {
-            LOG.warn("Unable to start timeline service. Proceeding as if embedded server is disabled", e);
-            stopEmbeddedServerView(false);
-          }
-        } else {
-          LOG.info("Timeline Server already running. Not restarting the service");
-        }
-      } else {
-        LOG.info("Embedded Timeline Server is disabled. Not starting timeline service");
-      }
-    }
   }
 }

@@ -94,7 +94,6 @@ public class TestArchivedCommitsCommand extends AbstractShellIntegrationTest {
     metaClient.getActiveTimeline().reload().getAllCommitsTimeline().filterCompletedInstants();
 
     // archive
-
     HoodieSparkTimelineArchiveLog archiveLog = new HoodieSparkTimelineArchiveLog(cfg, context);
     archiveLog.archiveIfRequired(context);
   }

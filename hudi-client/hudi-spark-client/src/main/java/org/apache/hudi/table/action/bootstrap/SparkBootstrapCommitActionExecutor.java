@@ -116,6 +116,7 @@ public class SparkBootstrapCommitActionExecutor<T extends HoodieRecordPayload>
 
   @Override
   public HoodieWriteMetadata<JavaRDD<WriteStatus>> execute(JavaRDD<HoodieRecord<T>> inputRecordsRDD) {
+    // NO_OP
     return null;
   }
 
@@ -268,7 +269,7 @@ public class SparkBootstrapCommitActionExecutor<T extends HoodieRecordPayload>
         (FullRecordBootstrapDataProvider) ReflectionUtils.loadClass(config.getFullBootstrapInputProvider(),
             properties, context);
     JavaRDD<HoodieRecord> inputRecordsRDD =
-        (JavaRDD<HoodieRecord>) inputProvider.generateInputRecord("bootstrap_source", config.getBootstrapSourceBasePath(),
+        (JavaRDD<HoodieRecord>) inputProvider.generateInputRecords("bootstrap_source", config.getBootstrapSourceBasePath(),
             partitionFilesList);
     // Start Full Bootstrap
     final HoodieInstant requested = new HoodieInstant(HoodieInstant.State.REQUESTED, table.getMetaClient().getCommitActionType(),
@@ -337,6 +338,7 @@ public class SparkBootstrapCommitActionExecutor<T extends HoodieRecordPayload>
 
   /**
    * Return Bootstrap Mode selections for partitions listed and figure out bootstrap Schema.
+   *
    * @return
    * @throws IOException
    */

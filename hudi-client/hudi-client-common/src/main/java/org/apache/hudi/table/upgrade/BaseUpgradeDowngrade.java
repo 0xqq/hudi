@@ -76,7 +76,7 @@ public abstract class BaseUpgradeDowngrade {
    * @param instantTime current instant time that should not be touched.
    */
   public abstract void run(HoodieTableMetaClient metaClient, HoodieTableVersion toVersion, HoodieWriteConfig config,
-                         HoodieEngineContext context, String instantTime);
+                           HoodieEngineContext context, String instantTime);
 
   public BaseUpgradeDowngrade(HoodieTableMetaClient metaClient, HoodieWriteConfig config, HoodieEngineContext context) {
     this.metaClient = metaClient;

@@ -32,10 +32,10 @@ import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieException;
 import org.apache.hudi.exception.HoodieIndexException;
 import org.apache.hudi.index.HoodieIndex.IndexType;
-import org.apache.hudi.index.bloom.HoodieSparkBloomIndex;
-import org.apache.hudi.index.bloom.HoodieSparkGlobalBloomIndex;
-import org.apache.hudi.index.hbase.HoodieSparkHBaseIndex;
-import org.apache.hudi.index.simple.HoodieSparkSimpleIndex;
+import org.apache.hudi.index.bloom.SparkHoodieBloomIndex;
+import org.apache.hudi.index.bloom.SparkHoodieGlobalBloomIndex;
+import org.apache.hudi.index.hbase.SparkHoodieHBaseIndex;
+import org.apache.hudi.index.simple.SparkHoodieSimpleIndex;
 import org.apache.hudi.table.HoodieTable;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -70,29 +70,29 @@ public class TestHoodieIndexConfigs {
       case INMEMORY:
         config = clientConfigBuilder.withPath(basePath)
             .withIndexConfig(indexConfigBuilder.withIndexType(HoodieIndex.IndexType.INMEMORY).build()).build();
-        assertTrue(HoodieSparkIndexFactory.createIndex(config) instanceof SparkInMemoryHashIndex);
+        assertTrue(SparkHoodieIndex.createIndex(config) instanceof SparkInMemoryHashIndex);
         break;
       case BLOOM:
         config = clientConfigBuilder.withPath(basePath)
             .withIndexConfig(indexConfigBuilder.withIndexType(HoodieIndex.IndexType.BLOOM).build()).build();
-        assertTrue(HoodieSparkIndexFactory.createIndex(config) instanceof HoodieSparkBloomIndex);
+        assertTrue(SparkHoodieIndex.createIndex(config) instanceof SparkHoodieBloomIndex);
         break;
       case GLOBAL_BLOOM:
         config = clientConfigBuilder.withPath(basePath)
             .withIndexConfig(indexConfigBuilder.withIndexType(IndexType.GLOBAL_BLOOM).build()).build();
-        assertTrue(HoodieSparkIndexFactory.createIndex(config) instanceof HoodieSparkGlobalBloomIndex);
+        assertTrue(SparkHoodieIndex.createIndex(config) instanceof SparkHoodieGlobalBloomIndex);
         break;
       case SIMPLE:
         config = clientConfigBuilder.withPath(basePath)
             .withIndexConfig(indexConfigBuilder.withIndexType(IndexType.SIMPLE).build()).build();
-        assertTrue(HoodieSparkIndexFactory.createIndex(config) instanceof HoodieSparkSimpleIndex);
+        assertTrue(SparkHoodieIndex.createIndex(config) instanceof SparkHoodieSimpleIndex);
         break;
       case HBASE:
         config = clientConfigBuilder.withPath(basePath)
             .withIndexConfig(indexConfigBuilder.withIndexType(HoodieIndex.IndexType.HBASE)
                 .withHBaseIndexConfig(new HoodieHBaseIndexConfig.Builder().build()).build())
             .build();
-        assertTrue(HoodieSparkIndexFactory.createIndex(config) instanceof HoodieSparkHBaseIndex);
+        assertTrue(SparkHoodieIndex.createIndex(config) instanceof SparkHoodieHBaseIndex);
         break;
       default:
         // no -op. just for checkstyle errors
@@ -105,7 +105,7 @@ public class TestHoodieIndexConfigs {
     HoodieIndexConfig.Builder indexConfigBuilder = HoodieIndexConfig.newBuilder();
     HoodieWriteConfig config = clientConfigBuilder.withPath(basePath)
         .withIndexConfig(indexConfigBuilder.withIndexClass(DummyHoodieIndex.class.getName()).build()).build();
-    assertTrue(HoodieSparkIndexFactory.createIndex(config) instanceof DummyHoodieIndex);
+    assertTrue(SparkHoodieIndex.createIndex(config) instanceof DummyHoodieIndex);
   }
 
   @Test
@@ -115,19 +115,19 @@ public class TestHoodieIndexConfigs {
     final HoodieWriteConfig config1 = clientConfigBuilder.withPath(basePath)
         .withIndexConfig(indexConfigBuilder.withIndexClass(IndexWithConstructor.class.getName()).build()).build();
     final Throwable thrown1 = assertThrows(HoodieException.class, () -> {
-      HoodieSparkIndexFactory.createIndex(config1);
+      SparkHoodieIndex.createIndex(config1);
     }, "exception is expected");
     assertTrue(thrown1.getMessage().contains("is not a subclass of HoodieIndex"));
 
     final HoodieWriteConfig config2 = clientConfigBuilder.withPath(basePath)
         .withIndexConfig(indexConfigBuilder.withIndexClass(IndexWithoutConstructor.class.getName()).build()).build();
     final Throwable thrown2 = assertThrows(HoodieException.class, () -> {
-      HoodieSparkIndexFactory.createIndex(config2);
+      SparkHoodieIndex.createIndex(config2);
     }, "exception is expected");
     assertTrue(thrown2.getMessage().contains("Unable to instantiate class"));
   }
 
-  public static class DummyHoodieIndex<T extends HoodieRecordPayload<T>> extends HoodieIndex<T, JavaRDD<HoodieRecord<T>>, JavaRDD<HoodieKey>, JavaRDD<WriteStatus>, JavaPairRDD<HoodieKey, Option<Pair<String, String>>>> {
+  public static class DummyHoodieIndex<T extends HoodieRecordPayload<T>> extends SparkHoodieIndex<T> {
     public DummyHoodieIndex(HoodieWriteConfig config) {
       super(config);
     }

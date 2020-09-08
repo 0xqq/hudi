@@ -33,7 +33,7 @@ import org.apache.hudi.config.HoodieIndexConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieIndexException;
 import org.apache.hudi.index.HoodieIndex;
-import org.apache.hudi.index.HoodieSparkIndexFactory;
+import org.apache.hudi.index.SparkHoodieIndex;
 import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.table.HoodieTable;
 
@@ -99,7 +99,7 @@ public class HoodieReadClient<T extends HoodieRecordPayload> implements Serializ
     // Create a Hoodie table which encapsulated the commits and files visible
     HoodieTableMetaClient metaClient = new HoodieTableMetaClient(hadoopConf, basePath, true);
     this.hoodieTable = HoodieSparkTable.create(clientConfig, context, metaClient);
-    this.index = HoodieSparkIndexFactory.createIndex(clientConfig);
+    this.index = SparkHoodieIndex.createIndex(clientConfig);
     this.sqlContextOpt = Option.empty();
   }
 

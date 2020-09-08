@@ -21,7 +21,7 @@ package org.apache.hudi.cli.commands;
 import org.apache.hudi.DataSourceWriteOptions;
 import org.apache.hudi.cli.DedupeSparkJob;
 import org.apache.hudi.cli.utils.SparkUtil;
-import org.apache.hudi.client.HoodieSparkWriteClient;
+import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.config.TypedProperties;
 import org.apache.hudi.client.utils.ClientUtils;
@@ -343,7 +343,7 @@ public class SparkMain {
   }
 
   private static int rollback(JavaSparkContext jsc, String instantTime, String basePath) throws Exception {
-    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
+    SparkRDDWriteClient client = createHoodieClient(jsc, basePath);
     if (client.rollback(instantTime)) {
       LOG.info(String.format("The commit \"%s\" rolled back.", instantTime));
       return 0;
@@ -355,7 +355,7 @@ public class SparkMain {
 
   private static int createSavepoint(JavaSparkContext jsc, String commitTime, String user,
       String comments, String basePath) throws Exception {
-    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
+    SparkRDDWriteClient client = createHoodieClient(jsc, basePath);
     try {
       client.savepoint(commitTime, user, comments);
       LOG.info(String.format("The commit \"%s\" has been savepointed.", commitTime));
@@ -367,7 +367,7 @@ public class SparkMain {
   }
 
   private static int rollbackToSavepoint(JavaSparkContext jsc, String savepointTime, String basePath) throws Exception {
-    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
+    SparkRDDWriteClient client = createHoodieClient(jsc, basePath);
     try {
       client.restoreToSavepoint(savepointTime);
       LOG.info(String.format("The commit \"%s\" rolled back.", savepointTime));
@@ -379,7 +379,7 @@ public class SparkMain {
   }
 
   private static int deleteSavepoint(JavaSparkContext jsc, String savepointTime, String basePath) throws Exception {
-    HoodieSparkWriteClient client = createHoodieClient(jsc, basePath);
+    SparkRDDWriteClient client = createHoodieClient(jsc, basePath);
     try {
       client.deleteSavepoint(savepointTime);
       LOG.info(String.format("Savepoint \"%s\" deleted.", savepointTime));
@@ -413,9 +413,9 @@ public class SparkMain {
     }
   }
 
-  private static HoodieSparkWriteClient createHoodieClient(JavaSparkContext jsc, String basePath) throws Exception {
+  private static SparkRDDWriteClient createHoodieClient(JavaSparkContext jsc, String basePath) throws Exception {
     HoodieWriteConfig config = getWriteConfig(basePath);
-    return new HoodieSparkWriteClient(new HoodieSparkEngineContext(jsc), config);
+    return new SparkRDDWriteClient(new HoodieSparkEngineContext(jsc), config);
   }
 
   private static HoodieWriteConfig getWriteConfig(String basePath) {

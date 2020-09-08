@@ -18,7 +18,6 @@
 
 package org.apache.hudi.async;
 
-import org.apache.hudi.asyc.BaseAsyncCompactService;
 import org.apache.hudi.client.AbstractHoodieWriteClient;
 import org.apache.hudi.client.BaseCompactor;
 import org.apache.hudi.client.HoodieSparkCompactor;
@@ -41,6 +40,10 @@ public class HoodieSparkAsyncCompactService extends BaseAsyncCompactService {
 
   private static final Logger LOG = LogManager.getLogger(HoodieSparkAsyncCompactService.class);
 
+  /**
+   * This is the job pool used by async compaction.
+   */
+  public static final String COMPACT_POOL_NAME = "hoodiecompact";
   private transient JavaSparkContext jssc;
   public HoodieSparkAsyncCompactService(HoodieEngineContext context, AbstractHoodieWriteClient client) {
     super(context, client);

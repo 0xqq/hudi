@@ -18,7 +18,6 @@
 
 package org.apache.hudi.async;
 
-import org.apache.hudi.asyc.BaseAsyncCompactService;
 import org.apache.hudi.client.AbstractHoodieWriteClient;
 import org.apache.hudi.client.BaseCompactor;
 import org.apache.hudi.client.HoodieSparkCompactor;
@@ -36,6 +35,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
+
+import static org.apache.hudi.async.HoodieSparkAsyncCompactService.COMPACT_POOL_NAME;
 
 /**
  * Async Compaction Service used by Structured Streaming. Here, async compaction is run in daemon mode to prevent
