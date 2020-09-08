@@ -18,6 +18,8 @@
 
 package org.apache.hudi.table;
 
+import org.apache.hudi.common.util.collection.Pair;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Set;
@@ -27,12 +29,7 @@ import java.util.Set;
  * <p>
  * TODO(vc): Think about obtaining this directly from index.tagLocation
  */
-public abstract class BaseWorkloadProfile<I> implements Serializable {
-
-  /**
-   * Input workload.
-   */
-  protected final I taggedRecords;
+public class WorkloadProfile implements Serializable {
 
   /**
    * Computed workload profile.
@@ -44,17 +41,10 @@ public abstract class BaseWorkloadProfile<I> implements Serializable {
    */
   protected final WorkloadStat globalStat;
 
-  public BaseWorkloadProfile(I taggedRecords) {
-    this.taggedRecords = taggedRecords;
-    this.partitionPathStatMap = new HashMap<>();
-    this.globalStat = new WorkloadStat();
-    buildProfile();
+  public WorkloadProfile(Pair<HashMap<String, WorkloadStat>, WorkloadStat> profile) {
+    this.partitionPathStatMap = profile.getLeft();
+    this.globalStat = profile.getRight();
   }
-
-  /**
-   *  Method help to build WorkloadProfile.
-   */
-  protected abstract void buildProfile();
 
   public WorkloadStat getGlobalStat() {
     return globalStat;

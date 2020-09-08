@@ -39,11 +39,11 @@ public class WorkloadStat implements Serializable {
     updateLocationToCount = new HashMap<>();
   }
 
-  long addInserts(long numInserts) {
+  public long addInserts(long numInserts) {
     return this.numInserts += numInserts;
   }
 
-  long addUpdates(HoodieRecordLocation location, long numUpdates) {
+  public long addUpdates(HoodieRecordLocation location, long numUpdates) {
     updateLocationToCount.put(location.getFileId(), Pair.of(location.getInstantTime(), numUpdates));
     return this.numUpdates += numUpdates;
   }

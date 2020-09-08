@@ -32,7 +32,7 @@ import org.apache.hudi.common.util.NumericUtils;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
-import org.apache.hudi.table.BaseWorkloadProfile;
+import org.apache.hudi.table.WorkloadProfile;
 import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.table.WorkloadStat;
 import org.apache.log4j.LogManager;
@@ -72,7 +72,7 @@ public class UpsertPartitioner<T extends HoodieRecordPayload<T>> extends Partiti
   /**
    * Stat for the current workload. Helps in determining inserts, upserts etc.
    */
-  private BaseWorkloadProfile profile;
+  private WorkloadProfile profile;
   /**
    * Helps decide which bucket an incoming update should go to.
    */
@@ -90,7 +90,7 @@ public class UpsertPartitioner<T extends HoodieRecordPayload<T>> extends Partiti
 
   protected final HoodieWriteConfig config;
 
-  public UpsertPartitioner(BaseWorkloadProfile profile, HoodieEngineContext context, HoodieTable table,
+  public UpsertPartitioner(WorkloadProfile profile, HoodieEngineContext context, HoodieTable table,
                            HoodieWriteConfig config) {
     updateLocationToBucket = new HashMap<>();
     partitionPathToInsertBucketInfos = new HashMap<>();
@@ -106,7 +106,7 @@ public class UpsertPartitioner<T extends HoodieRecordPayload<T>> extends Partiti
         + "UpdateLocations mapped to buckets =>" + updateLocationToBucket);
   }
 
-  private void assignUpdates(BaseWorkloadProfile profile) {
+  private void assignUpdates(WorkloadProfile profile) {
     // each update location gets a partition
     Set<Entry<String, WorkloadStat>> partitionStatEntries = profile.getPartitionPathStatMap().entrySet();
     for (Map.Entry<String, WorkloadStat> partitionStat : partitionStatEntries) {
@@ -129,7 +129,7 @@ public class UpsertPartitioner<T extends HoodieRecordPayload<T>> extends Partiti
     return bucket;
   }
 
-  private void assignInserts(BaseWorkloadProfile profile, HoodieEngineContext context) {
+  private void assignInserts(WorkloadProfile profile, HoodieEngineContext context) {
     JavaSparkContext jsc = HoodieSparkEngineContext.getSparkContext(context);
     // for new inserts, compute buckets depending on how many records we have for each partition
     Set<String> partitionPaths = profile.getPartitionPaths();

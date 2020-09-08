@@ -31,7 +31,7 @@ import org.apache.hudi.execution.SparkLazyInsertIterable;
 import org.apache.hudi.io.HoodieSparkAppendHandle;
 import org.apache.hudi.io.SparkAppendHandleFactory;
 import org.apache.hudi.table.HoodieTable;
-import org.apache.hudi.table.SparkWorkloadProfile;
+import org.apache.hudi.table.WorkloadProfile;
 import org.apache.hudi.table.action.commit.BaseSparkCommitActionExecutor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -70,7 +70,7 @@ public abstract class BaseSparkDeltaCommitActionExecutor<T extends HoodieRecordP
   }
 
   @Override
-  public Partitioner getUpsertPartitioner(SparkWorkloadProfile profile) {
+  public Partitioner getUpsertPartitioner(WorkloadProfile profile) {
     if (profile == null) {
       throw new HoodieUpsertException("Need workload profile to construct the upsert partitioner.");
     }

@@ -26,6 +26,7 @@ import org.apache.hudi.common.model.HoodieBaseFile;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
 import org.apache.hudi.common.model.HoodieKey;
 import org.apache.hudi.common.model.HoodieRecord;
+import org.apache.hudi.common.model.HoodieRecordLocation;
 import org.apache.hudi.common.model.HoodieRecordPayload;
 import org.apache.hudi.common.model.HoodieWriteStat;
 import org.apache.hudi.common.model.WriteOperationType;
@@ -42,7 +43,8 @@ import org.apache.hudi.io.HoodieSparkMergeHandle;
 import org.apache.hudi.io.SparkCreateHandleFactory;
 import org.apache.hudi.table.HoodieSparkTable;
 import org.apache.hudi.table.HoodieTable;
-import org.apache.hudi.table.SparkWorkloadProfile;
+import org.apache.hudi.table.WorkloadProfile;
+import org.apache.hudi.table.WorkloadStat;
 import org.apache.hudi.table.action.HoodieWriteMetadata;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -59,6 +61,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -96,9 +99,9 @@ public abstract class BaseSparkCommitActionExecutor<T extends HoodieRecordPayloa
       LOG.info("RDD PreppedRecords was persisted at: " + inputRecordsRDD.getStorageLevel());
     }
 
-    SparkWorkloadProfile profile = null;
+    WorkloadProfile profile = null;
     if (isWorkloadProfileNeeded()) {
-      profile = new SparkWorkloadProfile(inputRecordsRDD);
+      profile = new WorkloadProfile(buildProfile(inputRecordsRDD));
       LOG.info("Workload profile :" + profile);
       saveWorkloadProfileMetadataToInflight(profile, instantTime);
     }
@@ -118,7 +121,41 @@ public abstract class BaseSparkCommitActionExecutor<T extends HoodieRecordPayloa
     return result;
   }
 
-  private Partitioner getPartitioner(SparkWorkloadProfile profile) {
+  private Pair<HashMap<String, WorkloadStat>, WorkloadStat> buildProfile(JavaRDD<HoodieRecord<T>> inputRecordsRDD) {
+    HashMap<String, WorkloadStat> partitionPathStatMap = new HashMap<>();
+    WorkloadStat globalStat = new WorkloadStat();
+
+    // group the records by partitionPath + currentLocation combination, count the number of
+    // records in each partition
+    Map<Tuple2<String, Option<HoodieRecordLocation>>, Long> partitionLocationCounts = inputRecordsRDD
+        .mapToPair(record -> new Tuple2<>(
+            new Tuple2<>(record.getPartitionPath(), Option.ofNullable(record.getCurrentLocation())), record))
+        .countByKey();
+
+    // count the number of both inserts and updates in each partition, update the counts to workLoadStats
+    for (Map.Entry<Tuple2<String, Option<HoodieRecordLocation>>, Long> e : partitionLocationCounts.entrySet()) {
+      String partitionPath = e.getKey()._1();
+      Long count = e.getValue();
+      Option<HoodieRecordLocation> locOption = e.getKey()._2();
+
+      if (!partitionPathStatMap.containsKey(partitionPath)) {
+        partitionPathStatMap.put(partitionPath, new WorkloadStat());
+      }
+
+      if (locOption.isPresent()) {
+        // update
+        partitionPathStatMap.get(partitionPath).addUpdates(locOption.get(), count);
+        globalStat.addUpdates(locOption.get(), count);
+      } else {
+        // insert
+        partitionPathStatMap.get(partitionPath).addInserts(count);
+        globalStat.addInserts(count);
+      }
+    }
+    return Pair.of(partitionPathStatMap, globalStat);
+  }
+
+  private Partitioner getPartitioner(WorkloadProfile profile) {
     if (WriteOperationType.isChangingRecords(operationType)) {
       return getUpsertPartitioner(profile);
     } else {
@@ -290,14 +327,14 @@ public abstract class BaseSparkCommitActionExecutor<T extends HoodieRecordPayloa
         taskContextSupplier, new SparkCreateHandleFactory<>());
   }
 
-  public Partitioner getUpsertPartitioner(SparkWorkloadProfile profile) {
+  public Partitioner getUpsertPartitioner(WorkloadProfile profile) {
     if (profile == null) {
       throw new HoodieUpsertException("Need workload profile to construct the upsert partitioner.");
     }
     return new UpsertPartitioner(profile, context, table, config);
   }
 
-  public Partitioner getInsertPartitioner(SparkWorkloadProfile profile) {
+  public Partitioner getInsertPartitioner(WorkloadProfile profile) {
     return getUpsertPartitioner(profile);
   }
 

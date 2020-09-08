@@ -29,8 +29,8 @@ import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.table.HoodieTable;
-import org.apache.hudi.table.SparkWorkloadProfile;
 
+import org.apache.hudi.table.WorkloadProfile;
 import org.apache.hudi.table.action.commit.SmallFile;
 import org.apache.hudi.table.action.commit.UpsertPartitioner;
 
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  */
 public class SparkUpsertDeltaCommitPartitioner<T extends HoodieRecordPayload<T>> extends UpsertPartitioner<T> {
 
-  SparkUpsertDeltaCommitPartitioner(SparkWorkloadProfile profile, HoodieSparkEngineContext context, HoodieTable table,
+  SparkUpsertDeltaCommitPartitioner(WorkloadProfile profile, HoodieSparkEngineContext context, HoodieTable table,
                                     HoodieWriteConfig config) {
     super(profile, context, table, config);
   }

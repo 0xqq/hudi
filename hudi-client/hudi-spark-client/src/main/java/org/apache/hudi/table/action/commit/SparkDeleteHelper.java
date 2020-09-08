@@ -30,7 +30,8 @@ import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieUpsertException;
 import org.apache.hudi.table.HoodieTable;
-import org.apache.hudi.table.SparkWorkloadProfile;
+import org.apache.hudi.table.WorkloadProfile;
+import org.apache.hudi.table.WorkloadStat;
 import org.apache.hudi.table.action.HoodieWriteMetadata;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -38,6 +39,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 
 /**
  * A spark implementation of {@link BaseDeleteHelper}.
@@ -104,7 +106,7 @@ public class SparkDeleteHelper<T extends HoodieRecordPayload,R> extends BaseDele
         result.setIndexLookupDuration(tagLocationDuration);
       } else {
         // if entire set of keys are non existent
-        deleteExecutor.saveWorkloadProfileMetadataToInflight(new SparkWorkloadProfile(jsc.emptyRDD()), instantTime);
+        deleteExecutor.saveWorkloadProfileMetadataToInflight(new WorkloadProfile(Pair.of(new HashMap<>(), new WorkloadStat())), instantTime);
         result = new HoodieWriteMetadata();
         result.setWriteStatuses(jsc.emptyRDD());
         deleteExecutor.commitOnAutoCommit(result);

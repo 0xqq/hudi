@@ -33,7 +33,7 @@ import org.apache.hudi.common.util.Option;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.exception.HoodieCommitException;
 import org.apache.hudi.exception.HoodieIOException;
-import org.apache.hudi.table.BaseWorkloadProfile;
+import org.apache.hudi.table.WorkloadProfile;
 import org.apache.hudi.table.HoodieTable;
 import org.apache.hudi.table.WorkloadStat;
 import org.apache.hudi.table.action.BaseActionExecutor;
@@ -76,7 +76,7 @@ public abstract class BaseCommitActionExecutor<T extends HoodieRecordPayload, I,
    * are unknown across batches Inserts (which are new parquet files) are rolled back based on commit time. // TODO :
    * Create a new WorkloadProfile metadata file instead of using HoodieCommitMetadata
    */
-  protected void saveWorkloadProfileMetadataToInflight(BaseWorkloadProfile<I> profile, String instantTime)
+  protected void saveWorkloadProfileMetadataToInflight(WorkloadProfile profile, String instantTime)
       throws HoodieCommitException {
     try {
       HoodieCommitMetadata metadata = new HoodieCommitMetadata();

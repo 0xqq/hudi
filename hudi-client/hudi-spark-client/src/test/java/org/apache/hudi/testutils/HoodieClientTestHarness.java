@@ -22,6 +22,8 @@ import org.apache.hudi.client.SparkRDDWriteClient;
 import org.apache.hudi.client.SparkTaskContextSupplier;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.fs.FSUtils;
+import org.apache.hudi.common.model.HoodieRecord;
+import org.apache.hudi.common.model.HoodieRecordLocation;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.common.table.view.HoodieTableFileSystemView;
@@ -29,6 +31,8 @@ import org.apache.hudi.common.testutils.HoodieCommonTestHarness;
 import org.apache.hudi.common.testutils.HoodieTestDataGenerator;
 import org.apache.hudi.common.testutils.HoodieTestUtils;
 import org.apache.hudi.common.testutils.minicluster.HdfsTestService;
+import org.apache.hudi.common.util.Option;
+import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.config.HoodieWriteConfig;
 
 import org.apache.hadoop.conf.Configuration;
@@ -38,15 +42,20 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hudi.table.WorkloadStat;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.apache.log4j.Logger;
 import org.apache.log4j.LogManager;
+import scala.Tuple2;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -350,5 +359,39 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
       tableView.init(metaClient, visibleActiveTimeline, fileStatuses);
     }
     return tableView;
+  }
+
+  protected Pair<HashMap<String, WorkloadStat>, WorkloadStat> buildProfile(JavaRDD<HoodieRecord> inputRecordsRDD) {
+    HashMap<String, WorkloadStat> partitionPathStatMap = new HashMap<>();
+    WorkloadStat globalStat = new WorkloadStat();
+
+    // group the records by partitionPath + currentLocation combination, count the number of
+    // records in each partition
+    Map<Tuple2<String, Option<HoodieRecordLocation>>, Long> partitionLocationCounts = inputRecordsRDD
+        .mapToPair(record -> new Tuple2<>(
+            new Tuple2<>(record.getPartitionPath(), Option.ofNullable(record.getCurrentLocation())), record))
+        .countByKey();
+
+    // count the number of both inserts and updates in each partition, update the counts to workLoadStats
+    for (Map.Entry<Tuple2<String, Option<HoodieRecordLocation>>, Long> e : partitionLocationCounts.entrySet()) {
+      String partitionPath = e.getKey()._1();
+      Long count = e.getValue();
+      Option<HoodieRecordLocation> locOption = e.getKey()._2();
+
+      if (!partitionPathStatMap.containsKey(partitionPath)) {
+        partitionPathStatMap.put(partitionPath, new WorkloadStat());
+      }
+
+      if (locOption.isPresent()) {
+        // update
+        partitionPathStatMap.get(partitionPath).addUpdates(locOption.get(), count);
+        globalStat.addUpdates(locOption.get(), count);
+      } else {
+        // insert
+        partitionPathStatMap.get(partitionPath).addInserts(count);
+        globalStat.addInserts(count);
+      }
+    }
+    return Pair.of(partitionPathStatMap, globalStat);
   }
 }

@@ -33,7 +33,7 @@ import org.apache.hudi.config.HoodieStorageConfig;
 import org.apache.hudi.config.HoodieWriteConfig;
 import org.apache.hudi.table.HoodieSparkCopyOnWriteTable;
 import org.apache.hudi.table.HoodieSparkTable;
-import org.apache.hudi.table.SparkWorkloadProfile;
+import org.apache.hudi.table.WorkloadProfile;
 import org.apache.hudi.testutils.HoodieClientTestBase;
 
 import org.apache.avro.Schema;
@@ -90,7 +90,7 @@ public class TestUpsertPartitioner extends HoodieClientTestBase {
     List<HoodieRecord> records = new ArrayList<>();
     records.addAll(insertRecords);
     records.addAll(updateRecords);
-    SparkWorkloadProfile profile = new SparkWorkloadProfile(jsc.parallelize(records));
+    WorkloadProfile profile = new WorkloadProfile(buildProfile(jsc.parallelize(records)));
     UpsertPartitioner partitioner = new UpsertPartitioner(profile, context, table, config);
     assertEquals(0, partitioner.getPartition(
         new Tuple2<>(updateRecords.get(0).getKey(), Option.ofNullable(updateRecords.get(0).getCurrentLocation()))),
@@ -200,7 +200,7 @@ public class TestUpsertPartitioner extends HoodieClientTestBase {
     HoodieTestDataGenerator dataGenerator = new HoodieTestDataGenerator(new String[] {testPartitionPath});
     List<HoodieRecord> insertRecords = dataGenerator.generateInserts("001", totalInsertNum);
 
-    SparkWorkloadProfile profile = new SparkWorkloadProfile(jsc.parallelize(insertRecords));
+    WorkloadProfile profile = new WorkloadProfile(buildProfile(jsc.parallelize(insertRecords)));
     UpsertPartitioner partitioner = new UpsertPartitioner(profile, context, table, config);
     List<InsertBucketCumulativeWeightPair> insertBuckets = partitioner.getInsertBuckets(testPartitionPath);
 
