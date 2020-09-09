@@ -19,7 +19,7 @@
 package org.apache.hudi.client;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hudi.client.embebbed.EmbeddedTimelineService;
+import org.apache.hudi.client.embedded.EmbeddedTimelineService;
 import org.apache.hudi.client.utils.ClientUtils;
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.fs.FSUtils;
@@ -61,7 +61,7 @@ public abstract class AbstractHoodieClient implements Serializable, AutoCloseabl
   }
 
   protected AbstractHoodieClient(HoodieEngineContext context, HoodieWriteConfig clientConfig,
-                                 Option<EmbeddedTimelineService> timelineServer) {
+      Option<EmbeddedTimelineService> timelineServer) {
     this.hadoopConf = context.getHadoopConf().get();
     this.fs = FSUtils.getFs(clientConfig.getBasePath(), hadoopConf);
     this.context = context;

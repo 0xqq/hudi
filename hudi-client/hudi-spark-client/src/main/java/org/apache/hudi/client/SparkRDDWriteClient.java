@@ -20,7 +20,7 @@ package org.apache.hudi.client;
 
 import com.codahale.metrics.Timer;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hudi.client.embebbed.EmbeddedTimelineService;
+import org.apache.hudi.client.embedded.EmbeddedTimelineService;
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.HoodieSparkEngineContext;
 import org.apache.hudi.common.model.HoodieCommitMetadata;

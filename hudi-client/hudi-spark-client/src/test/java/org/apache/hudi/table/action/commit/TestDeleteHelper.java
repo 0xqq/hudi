@@ -141,10 +141,10 @@ public class TestDeleteHelper {
 
   private HoodieWriteConfig newWriteConfig(boolean combine) {
     return HoodieWriteConfig.newBuilder()
-            .combineDeleteInput(combine)
-            .withPath(BASE_PATH)
-            .withDeleteParallelism(DELETE_PARALLELISM)
-            .build();
+        .combineDeleteInput(combine)
+        .withPath(BASE_PATH)
+        .withDeleteParallelism(DELETE_PARALLELISM)
+        .build();
   }
 
   private JavaRDD<HoodieKey> newHoodieKeysRddMock(int howMany, CombineTestMode combineMode) {
@@ -178,10 +178,6 @@ public class TestDeleteHelper {
     doReturn(true).when(emptyRdd).isEmpty();
     doReturn(Collections.emptyList()).when(emptyRdd).partitions();
     doReturn(emptyRdd).when(emptyRdd).map(any());
-
-    JavaPairRDD<Tuple2, Long> emptyPairRdd = mock(JavaPairRDD.class);
-    doReturn(Collections.emptyMap()).when(emptyPairRdd).countByKey();
-    doReturn(emptyPairRdd).when(emptyRdd).mapToPair(any());
 
     doReturn(emptyRdd).when(index).tagLocation(any(), any(), any());
     doReturn(emptyRdd).when(emptyRdd).filter(any());

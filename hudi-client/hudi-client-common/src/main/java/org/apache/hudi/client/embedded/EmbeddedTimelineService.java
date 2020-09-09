@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hudi.client.embebbed;
+package org.apache.hudi.client.embedded;
 
 import org.apache.hudi.common.HoodieEngineContext;
 import org.apache.hudi.common.config.SerializableConfiguration;
