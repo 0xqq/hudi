@@ -100,7 +100,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
   /**
    * Create a write client, without cleaning up failed/inflight commits.
    *
-   * @param context      HoodieEngineContext
+   * @param context HoodieEngineContext
    * @param clientConfig instance of HoodieWriteConfig
    */
   public AbstractHoodieWriteClient(HoodieEngineContext context, HoodieWriteConfig clientConfig) {
@@ -110,7 +110,7 @@ public abstract class AbstractHoodieWriteClient<T extends HoodieRecordPayload, I
   /**
    * Create a write client, with new hudi index.
    *
-   * @param context         HoodieEngineContext
+   * @param context HoodieEngineContext
    * @param writeConfig instance of HoodieWriteConfig
    * @param rollbackPending whether need to cleanup pending commits
    */
