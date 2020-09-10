@@ -124,7 +124,7 @@ public abstract class HoodieTable<T extends HoodieRecordPayload, I, K, O, P> imp
    * Insert a batch of new records into Hoodie table at the supplied instantTime.
    *
    * @param instantTime Instant Time for the action
-   * @param records     JavaRDD of hoodieRecords to upsert
+   * @param records hoodieRecords to upsert
    * @return HoodieWriteMetadata
    */
   public abstract HoodieWriteMetadata<O> insert(HoodieEngineContext context, String instantTime, I records);
