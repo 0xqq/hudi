@@ -21,6 +21,12 @@ package org.apache.hudi.common;
 import org.apache.hudi.client.TaskContextSupplier;
 import org.apache.hudi.common.config.SerializableConfiguration;
 
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
  * Base class contains the context information needed by the engine at runtime. It will be extended by different
  * engine implementation if needed.
@@ -44,5 +50,17 @@ public class HoodieEngineContext {
 
   public TaskContextSupplier getTaskContextSupplier() {
     return taskContextSupplier;
+  }
+
+  public <I, O> List<O> map(List<I> data, Function<I, O> func) {
+    return data.stream().map(func).collect(Collectors.toList());
+  }
+
+  public <I, O> List<O> flatMap(List<I> data, Function<? super I, ? extends Stream<? extends O>> func) {
+    return data.stream().flatMap(func).collect(Collectors.toList());
+  }
+
+  public <I> void foreach(List<I> data, Consumer<I> func) {
+    data.forEach(func);
   }
 }
