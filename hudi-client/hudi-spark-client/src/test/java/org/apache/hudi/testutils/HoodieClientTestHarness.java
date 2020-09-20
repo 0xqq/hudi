@@ -42,14 +42,14 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.apache.hudi.table.WorkloadStat;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
-import org.apache.log4j.Logger;
-import org.apache.log4j.LogManager;
 import scala.Tuple2;
 
 import java.io.IOException;
@@ -82,10 +82,6 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
   protected transient HoodieTableFileSystemView tableView;
 
   protected final SparkTaskContextSupplier supplier = new SparkTaskContextSupplier();
-
-  public String getNextInstant() {
-    return String.format("%09d", instantGen.getAndIncrement());
-  }
 
   // dfs
   protected String dfsBasePath;
@@ -135,6 +131,7 @@ public abstract class HoodieClientTestHarness extends HoodieCommonTestHarness im
     // Initialize a local spark env
     jsc = new JavaSparkContext(HoodieClientTestUtils.getSparkConfForTest(appName + "#" + testMethodName));
     jsc.setLogLevel("ERROR");
+    hadoopConf = jsc.hadoopConfiguration();
 
     // SQLContext stuff
     sqlContext = new SQLContext(jsc);
